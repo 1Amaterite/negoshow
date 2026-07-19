@@ -1,3 +1,6 @@
+"use client";
+
+
 import { useState, useRef, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 import {
@@ -988,7 +991,7 @@ function AdminLoginScreen({ onLogin, onBack }: { onLogin: ()=>void; onBack: ()=>
   const [attempts, setAttempts] = useState(0);
   const [capsLock, setCapsLock] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const nextErrors: { username?: string; password?: string } = {};
     const cleanUsername = username.trim();
 
@@ -1003,8 +1006,17 @@ function AdminLoginScreen({ onLogin, onBack }: { onLogin: ()=>void; onBack: ()=>
     setLoading(true);
     setError("");
     setFieldErrors({});
-    setTimeout(() => {
-      if (cleanUsername === ADMIN_CREDS.username && password === ADMIN_CREDS.password) {
+    
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: cleanUsername, password })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
         setAttempts(0);
         onLogin();
       } else {
@@ -1015,9 +1027,12 @@ function AdminLoginScreen({ onLogin, onBack }: { onLogin: ()=>void; onBack: ()=>
           : "Hindi tugma ang username o password. Subukan muli.");
         setPassword("");
         setFieldErrors({ password: "Hindi tugma ang username o password sa aming tala." });
-        setLoading(false);
       }
-    }, 650);
+    } catch (err) {
+      setError("May problema sa server. Subukan muli mamaya.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -1554,15 +1569,7 @@ export default function App() {
       <div className="app-shell bg-background">
         {!isAdminFlow && <DesktopNav activeTab={activeTab} navigate={navigate}/>} 
         <main id="main-content" className={`app-main ${isAdminFlow ? "" : "pb-20 md:pb-0"}`}>
-          {supabaseStatus !== "idle" && (
-            <div className={`p-2 text-center text-xs font-semibold ${
-              supabaseStatus === "connected" ? "bg-green-100 text-green-800" :
-              supabaseStatus === "checking" ? "bg-blue-100 text-blue-800" :
-              "bg-red-100 text-red-800"
-            }`}>
-              Supabase Status: {supabaseStatus.toUpperCase()}
-            </div>
-          )}
+
           <div key={`${screen}-${checkerStep}`} className="page-transition min-h-full">
 
           {screen==="home"        && <HomeScreen navigate={navigate}/>}
