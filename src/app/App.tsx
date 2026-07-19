@@ -1,4 +1,5 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { supabase } from "../lib/supabaseClient";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, ResponsiveContainer,
   Tooltip, CartesianGrid, ReferenceLine, Cell,
@@ -1496,6 +1497,25 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>("home");
   const [selectedCommodity, setSelectedCommodity] = useState<Commodity | null>(null);
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+  const [supabaseStatus, setSupabaseStatus] = useState<"checking" | "connected" | "error" | "idle">("idle");
+
+  useEffect(() => {
+    async function checkSupabase() {
+      setSupabaseStatus("checking");
+      try {
+        const { error } = await supabase.from('non_existent_table').select('*').limit(1);
+        // We expect a specific error if connected, or a network error if not
+        if (error && error.message.includes('FetchError')) {
+          setSupabaseStatus("error");
+        } else {
+          setSupabaseStatus("connected");
+        }
+      } catch (err) {
+        setSupabaseStatus("error");
+      }
+    }
+    checkSupabase();
+  }, []);
 
   const [checkerStep, setCheckerStep] = useState<"input"|"result">("input");
   const [quotedPrice, setQuotedPrice] = useState("");
@@ -1534,6 +1554,15 @@ export default function App() {
       <div className="app-shell bg-background">
         {!isAdminFlow && <DesktopNav activeTab={activeTab} navigate={navigate}/>} 
         <main id="main-content" className={`app-main ${isAdminFlow ? "" : "pb-20 md:pb-0"}`}>
+          {supabaseStatus !== "idle" && (
+            <div className={`p-2 text-center text-xs font-semibold ${
+              supabaseStatus === "connected" ? "bg-green-100 text-green-800" :
+              supabaseStatus === "checking" ? "bg-blue-100 text-blue-800" :
+              "bg-red-100 text-red-800"
+            }`}>
+              Supabase Status: {supabaseStatus.toUpperCase()}
+            </div>
+          )}
           <div key={`${screen}-${checkerStep}`} className="page-transition min-h-full">
 
           {screen==="home"        && <HomeScreen navigate={navigate}/>}
