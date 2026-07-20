@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 import '../styles/index.css';
+import { GlobalProvider } from '@/lib/GlobalContext';
+import { AppShell } from '@/components/AppShell';
 
 export const metadata: Metadata = {
   title: 'Ne-goshow DSS',
@@ -13,7 +15,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body suppressHydrationWarning>{children}</body>
+      <body suppressHydrationWarning>
+        <GlobalProvider>
+          <AppShell>
+            {children}
+          </AppShell>
+        </GlobalProvider>
+      </body>
     </html>
   );
 }

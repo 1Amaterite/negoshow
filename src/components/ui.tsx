@@ -1,0 +1,110 @@
+"use client";
+
+import React from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Commodity } from "@/lib/types";
+
+export function KalagayanChip({ volatility }: { volatility: string }) {
+  const s: Record<string, string> = {
+    Mataas: "bg-red-100 text-red-700 border border-red-200",
+    Katamtaman: "bg-amber-100 text-amber-700 border border-amber-200",
+    Mababa: "bg-green-100 text-green-700 border border-green-200",
+  };
+  return (
+    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${s[volatility] || s.Mababa}`}>
+      {volatility}
+    </span>
+  );
+}
+
+export function TrendBadge({ trend, change, changeAbs }: { trend: string; change: number; changeAbs: number }) {
+  if (trend === "up")
+    return (
+      <span className="flex items-center gap-0.5 text-sm font-semibold text-red-600">
+        <TrendingUp size={14} /> +₱{changeAbs} ({change}%)
+      </span>
+    );
+  if (trend === "down")
+    return (
+      <span className="flex items-center gap-0.5 text-sm font-semibold text-green-700">
+        <TrendingDown size={14} /> -₱{Math.abs(changeAbs)} ({Math.abs(change)}%)
+      </span>
+    );
+  return (
+    <span className="flex items-center gap-0.5 text-sm font-semibold text-[#72796e]">
+      <Minus size={14} /> ±₱{Math.abs(changeAbs)} ({Math.abs(change)}%)
+    </span>
+  );
+}
+
+export function PageHeader({
+  title,
+  subtitle,
+  onBack,
+  right,
+}: {
+  title: string;
+  subtitle?: string;
+  onBack?: () => void;
+  right?: React.ReactNode;
+}) {
+  const router = useRouter();
+  
+  const handleBack = onBack || (() => router.back());
+
+  return (
+    <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border px-4 md:px-8 py-3 md:py-4">
+      <div className="flex items-center gap-3">
+        {handleBack && (
+          <button
+            type="button"
+            aria-label="Bumalik"
+            onClick={handleBack}
+            className="w-9 h-9 rounded-full bg-muted flex items-center justify-center active:scale-95 transition-transform shrink-0"
+          >
+            <ArrowLeft size={18} className="text-foreground" />
+          </button>
+        )}
+        <div className="flex-1 min-w-0">
+          <h1 className="text-lg md:text-xl font-extrabold text-foreground leading-tight">{title}</h1>
+          {subtitle && <p className="text-sm text-muted-foreground mt-0.5">{subtitle}</p>}
+        </div>
+        {right}
+      </div>
+    </div>
+  );
+}
+
+export function SL({ children }: { children: React.ReactNode }) {
+  return <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">{children}</p>;
+}
+
+export function CommodityImage({
+  commodity,
+  size = "md",
+  className = "",
+}: {
+  commodity: Commodity;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}) {
+  const sizes = { sm: "w-8 h-8", md: "w-11 h-11", lg: "w-14 h-14" };
+  return (
+    <img
+      src={commodity.image}
+      alt={commodity.tagalog}
+      loading="lazy"
+      className={`${sizes[size]} rounded-xl object-contain p-1 border border-border/70 bg-[#faf8f3] shrink-0 ${className}`}
+    />
+  );
+}
+
+export function TierBadge({ tier, icon: Icon, color }: { tier: string; icon: React.ElementType; color: string }) {
+  return (
+    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border w-fit mb-3 ${color}`}>
+      <Icon size={11} />
+      <span className="text-[10px] font-bold uppercase tracking-widest">{tier}</span>
+    </div>
+  );
+}
