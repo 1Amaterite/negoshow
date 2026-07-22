@@ -15,42 +15,65 @@ model AdminUser {
 }
 
 model Commodity {
-  id           Int           @id @default(autoincrement())
-  name         String        @unique
-  unit         String        @default("kg")
+  id          Int     @id @default(autoincrement())
+  name        String  @unique
+  unit        String  @default("kg")
+  description String?
+  imageUrl    String?
 
   retailPrices RetailPrice[]
   vendorChecks VendorCheck[]
 }
 
 model Market {
-  id           Int           @id @default(autoincrement())
-  name         String
+  id   Int    @id @default(autoincrement())
+  name String
 
   retailPrices RetailPrice[]
   vendorChecks VendorCheck[]
 }
 
 model RetailPrice {
-  id               Int             @id @default(autoincrement())
+  id               Int      @id @default(autoincrement())
   commodityId      Int
   marketId         Int
   price            Float
   observedDate     DateTime
-  createdAt        DateTime        @default(now())
+  sourceBulletinId Int?
+  createdAt        DateTime @default(now())
 
-  commodity        Commodity       @relation(fields: [commodityId], references: [id])
-  market           Market          @relation(fields: [marketId], references: [id])
+  commodity      Commodity       @relation(fields: [commodityId], references: [id])
+  market         Market          @relation(fields: [marketId], references: [id])
+  sourceBulletin BulletinRecord? @relation(fields: [sourceBulletinId], references: [id])
 }
 
 model VendorCheck {
-  id           Int       @id @default(autoincrement())
+  id           Int      @id @default(autoincrement())
   commodityId  Int
   marketId     Int?
   checkedPrice Float
-  checkedAt    DateTime  @default(now())
+  checkedAt    DateTime @default(now())
+  isFlagged    Boolean  @default(false)
 
-  commodity    Commodity @relation(fields: [commodityId], references: [id])
-  market       Market?   @relation(fields: [marketId], references: [id])
+  commodity           Commodity            @relation(fields: [commodityId], references: [id])
+  market              Market?              @relation(fields: [marketId], references: [id])
+  validationDecisions ValidationDecision[]
 }
 
+model BulletinRecord {
+  id              Int      @id @default(autoincrement())
+  fileUrl         String
+  uploadDate      DateTime @default(now())
+  processedStatus String   @default("PENDING")
+
+  retailPrices RetailPrice[]
+}
+
+model ValidationDecision {
+  id            Int      @id @default(autoincrement())
+  vendorCheckId Int
+  adminDecision String
+  createdAt     DateTime @default(now())
+
+  vendorCheck VendorCheck @relation(fields: [vendorCheckId], references: [id])
+}
