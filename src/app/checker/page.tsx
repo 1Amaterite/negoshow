@@ -16,11 +16,25 @@ export default function CheckerPage() {
   const [checkResult, setCheckResult] = useState<"fair" | "flagged" | null>(null);
   const [locationOpen, setLocationOpen] = useState(false);
 
-  const onCheck = () => {
-    if (!checkerCommodity || !quotedPrice) return;
+  const onCheck = async () => {
+    if (!checkerCommodity || !quotedPrice || !checkerLocation) return;
     const variance = (parseFloat(quotedPrice) - checkerCommodity.baseline) / checkerCommodity.baseline;
     setCheckResult(variance > 0.15 ? "flagged" : "fair");
     setCheckerStep("result");
+
+    try {
+      await fetch("/api/checks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          commodity: checkerCommodity.id,
+          market: checkerLocation,
+          price: parseFloat(quotedPrice),
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to save price check:", err);
+    }
   };
 
   const onReset = () => {
@@ -80,7 +94,7 @@ export default function CheckerPage() {
                   <p className="font-bold text-foreground">{cheapest.name}</p>
                   <p className="text-lg font-extrabold text-green-700">₱{cheapest.price}/kg</p>
                 </div>
-                <p className="text-xs text-muted-foreground flex items-center gap-1"><Navigation size={12}/>{cheapest.distance} mula sa iyo</p>
+
                 <div className="mt-3 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                   <p className="text-xs font-semibold text-green-700">💰 Makatitipid ka ng ₱{(quoted - cheapest.price).toFixed(0)}/kg doon</p>
                 </div>
