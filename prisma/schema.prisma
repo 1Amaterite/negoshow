@@ -13,3 +13,44 @@ model AdminUser {
   password  String
   createdAt DateTime @default(now())
 }
+
+model Commodity {
+  id           Int           @id @default(autoincrement())
+  name         String        @unique
+  unit         String        @default("kg")
+
+  retailPrices RetailPrice[]
+  vendorChecks VendorCheck[]
+}
+
+model Market {
+  id           Int           @id @default(autoincrement())
+  name         String
+
+  retailPrices RetailPrice[]
+  vendorChecks VendorCheck[]
+}
+
+model RetailPrice {
+  id               Int             @id @default(autoincrement())
+  commodityId      Int
+  marketId         Int
+  price            Float
+  observedDate     DateTime
+  createdAt        DateTime        @default(now())
+
+  commodity        Commodity       @relation(fields: [commodityId], references: [id])
+  market           Market          @relation(fields: [marketId], references: [id])
+}
+
+model VendorCheck {
+  id           Int       @id @default(autoincrement())
+  commodityId  Int
+  marketId     Int?
+  checkedPrice Float
+  checkedAt    DateTime  @default(now())
+
+  commodity    Commodity @relation(fields: [commodityId], references: [id])
+  market       Market?   @relation(fields: [marketId], references: [id])
+}
+
