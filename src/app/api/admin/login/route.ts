@@ -1,37 +1,44 @@
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { NextRequest, NextResponse } from "next/server";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await request.json();
-    const { username, password } = body;
+    const { commodity, market, price } = await req.json();
 
-    if (!username || !password) {
-      return NextResponse.json({ success: false, error: 'Username and password are required' }, { status: 400 });
+    if (!commodity || !market || typeof price !== "number") {
+      return NextResponse.json({ error: "Invalid input data" }, { status: 400 });
     }
 
-    // Secure database lookup
-    const user = await prisma.adminUser.findUnique({
-      where: { username }
+    const dbCommodity = await prisma.commodity.upsert({
+      where: { name: commodity },
+      update: {},
+      create: { name: commodity },
     });
 
-    if (!user) {
-      return NextResponse.json({ success: false, error: 'Invalid username or password' }, { status: 401 });
+    let dbMarket = await prisma.market.findFirst({
+      where: { name: market },
+    });
+
+    if (!dbMarket) {
+      dbMarket = await prisma.market.create({
+        data: { name: market },
+      });
     }
 
-    // In a real production app, use bcrypt.compare(password, user.password)
-    // For this demonstration project per user request, we match the string directly or handle hashing
-    if (user.password !== password) {
-      return NextResponse.json({ success: false, error: 'Invalid username or password' }, { status: 401 });
-    }
+    const vendorCheck = await prisma.vendorCheck.create({
+      data: {
+        commodityId: dbCommodity.id,
+        marketId: dbMarket.id,
+        checkedPrice: price,
+      },
+    });
 
-    // Success - in a real app, you would set an HTTP-only cookie with a JWT here
-    return NextResponse.json({ success: true, message: 'Logged in successfully' });
-
+    return NextResponse.json({ success: true, data: vendorCheck });
   } catch (error) {
-    console.error('Login error:', error);
-    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+    console.error("Error creating price check:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
+
