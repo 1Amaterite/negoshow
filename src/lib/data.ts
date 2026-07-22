@@ -55,7 +55,7 @@ export const COMMODITIES: Commodity[] = [
 
 export const COMMODITY_NAMES = ["Sibuyas Pula","Sibuyas Puti","Bawang","Luya","Patatas"];
 export const COVERAGE_AREAS  = ["Metro Manila","Pasay City","Makati City","Quezon City","Caloocan City","Marikina City"];
-export const LOCATIONS       = ["Pasay Talipapa","Cartimar Market","Pasay Central Market","Baclaran Market","Guadalupe Market","Malibay Market"];
+export const LOCATIONS       = ["Pasay City Public Market","Cartimar Market","Baclaran Market"];
 
 export const VARIANCE_DATA = COMMODITIES.map((c) => ({
   name: c.shortLabel,
