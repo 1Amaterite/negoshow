@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { TrendingUp, TrendingDown, Minus, AlertTriangle, Clock, Info, Navigation, Shield } from "lucide-react";
 import { COMMODITIES, PREDICTION_DATA, VARIANCE_DATA } from "@/lib/data";
@@ -12,12 +12,33 @@ import {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [dynamicCommodities, setDynamicCommodities] = useState(COMMODITIES);
   const [predC, setPredC] = useState(COMMODITIES[0]);
+
+  useEffect(() => {
+    fetch('/api/baselines')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          const updated = COMMODITIES.map(c => {
+            const match = data.find(b => b.commodity.name.includes(c.name) || c.name.includes(b.commodity.name));
+            if (match) {
+              return { ...c, baseline: match.price };
+            }
+            return c;
+          });
+          setDynamicCommodities(updated);
+          // Keep predC synced if needed, but it uses id anyway
+        }
+      })
+      .catch(err => console.error("Failed to fetch baselines:", err));
+  }, []);
+
   const predData = PREDICTION_DATA[predC.id] ?? PREDICTION_DATA["red-onion"];
   const peak = predData.find((d) => d.isPeak);
-  const volatileCount = COMMODITIES.filter((c) => c.volatility === "Mataas").length;
-  const avgChange = (COMMODITIES.reduce((s,c) => s + c.change, 0) / COMMODITIES.length).toFixed(1);
-  const risingCount = COMMODITIES.filter((c) => c.trend === "up").length;
+  const volatileCount = dynamicCommodities.filter((c) => c.volatility === "Mataas").length;
+  const avgChange = (dynamicCommodities.reduce((s,c) => s + c.change, 0) / dynamicCommodities.length).toFixed(1);
+  const risingCount = dynamicCommodities.filter((c) => c.trend === "up").length;
 
   const VarTip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
@@ -86,7 +107,7 @@ export default function DashboardPage() {
                 <p key={h} className={`text-[10px] font-bold uppercase tracking-wide text-muted-foreground ${h!=="Kalakal"?"text-right":""}`}>{h}</p>
               ))}
             </div>
-            {COMMODITIES.map((c,i)=>(
+            {dynamicCommodities.map((c,i)=>(
               <button key={c.id} onClick={() => router.push(`/commodity/${c.id}`)}
                 className={`w-full grid grid-cols-[1fr_52px_64px_56px] items-center px-3 py-3 border-b border-border last:border-0 active:bg-muted transition-colors text-left ${i%2===0?"":"bg-card/40"}`}>
                 <div className="flex items-center gap-2 min-w-0">
@@ -126,14 +147,14 @@ export default function DashboardPage() {
                   <Tooltip content={<VarTip/>}/>
                   <Bar dataKey="30-Araw na Karaniwan" fill="#c8a97a" radius={[4,4,0,0]}/>
                   <Bar dataKey="Kasalukuyan" radius={[4,4,0,0]}>
-                    {VARIANCE_DATA.map((d,i)=><Cell key={i} fill={d.variancePct>5?"#c62828":d.variancePct<-3?"#2d5a27":"#154212"}/>)}
+                    {VARIANCE_DATA.map((d,i)=><Cell key={i} fill={d.variancePct>10?"#c62828":d.variancePct<-10?"#2d5a27":"#154212"}/>)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
           <div className="space-y-1.5">
-            {VARIANCE_DATA.filter((d)=>Math.abs(d.variancePct)>2).map((d)=>{
+            {VARIANCE_DATA.filter((d)=>Math.abs(d.variancePct)>10).map((d)=>{
               const hi = d.variancePct > 0;
               return (
                 <div key={d.name} className={`flex items-center justify-between rounded-xl px-4 py-3 border ${hi?"bg-red-50 border-red-200":"bg-green-50 border-green-200"}`}>
@@ -158,7 +179,7 @@ export default function DashboardPage() {
         <section className="dashboard-section dashboard-forecast mt-8">
           <SL>Prediksyon sa Presyo — Susunod na 7 Araw</SL>
           <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1 scrollbar-hide">
-            {COMMODITIES.map((c)=>(
+            {dynamicCommodities.map((c)=>(
               <button key={c.id} onClick={()=>setPredC(c)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border whitespace-nowrap transition-colors shrink-0 ${
                   predC.id===c.id?"bg-primary text-white border-primary":"bg-card border-border text-foreground"

@@ -7,6 +7,18 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Decision {
+  APPROVED
+  REJECTED
+  PENDING
+}
+
+enum BulletinStatus {
+  PENDING
+  PROCESSED
+  REQUIRES_MANUAL_REVIEW
+}
+
 model AdminUser {
   id        Int      @id @default(autoincrement())
   username  String   @unique
@@ -40,11 +52,15 @@ model RetailPrice {
   price            Float
   observedDate     DateTime
   sourceBulletinId Int?
+  isProxy          Boolean  @default(false)
+  isVerified       Boolean  @default(false)
   createdAt        DateTime @default(now())
 
   commodity      Commodity       @relation(fields: [commodityId], references: [id])
   market         Market          @relation(fields: [marketId], references: [id])
   sourceBulletin BulletinRecord? @relation(fields: [sourceBulletinId], references: [id])
+
+  @@index([commodityId, observedDate])
 }
 
 model VendorCheck {
@@ -58,13 +74,15 @@ model VendorCheck {
   commodity           Commodity            @relation(fields: [commodityId], references: [id])
   market              Market?              @relation(fields: [marketId], references: [id])
   validationDecisions ValidationDecision[]
+
+  @@index([commodityId, checkedAt])
 }
 
 model BulletinRecord {
-  id              Int      @id @default(autoincrement())
+  id              Int            @id @default(autoincrement())
   fileUrl         String
-  uploadDate      DateTime @default(now())
-  processedStatus String   @default("PENDING")
+  uploadDate      DateTime       @default(now())
+  processedStatus BulletinStatus @default(PENDING)
 
   retailPrices RetailPrice[]
 }
@@ -72,8 +90,15 @@ model BulletinRecord {
 model ValidationDecision {
   id            Int      @id @default(autoincrement())
   vendorCheckId Int
-  adminDecision String
+  adminDecision Decision
   createdAt     DateTime @default(now())
 
   vendorCheck VendorCheck @relation(fields: [vendorCheckId], references: [id])
+}
+
+model AdminAlert {
+  id        Int      @id @default(autoincrement())
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 }

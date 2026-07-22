@@ -56,15 +56,17 @@ export default function AdminPage() {
   const router = useRouter();
   const { isAdmin, logout } = useGlobal();
   const [tab, setTab] = useState<AdminTab>("upload");
-  const [records, setRecords] = useState<AdminRecord[]>(INITIAL_RECORDS);
+  const [records, setRecords] = useState<any[]>([]);
+  const [done, setDone] = useState<any[]>([]); // To hold approved/rejected logs if desired
   const [uploads, setUploads] = useState<UploadedDoc[]>(INITIAL_UPLOADS);
+  const [alerts, setAlerts] = useState<any[]>([]);
 
   // Upload form state
   const [sourceOffice, setSourceOffice] = useState("");
   const [bulletinDate, setBulletinDate] = useState("");
   const [coverage, setCoverage] = useState("");
   const [docType, setDocType] = useState<"PDF"|"Image">("PDF");
-  const [selectedFile, setSelectedFile] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedComms, setSelectedComms] = useState<string[]>([]);
   const [coverageOpen, setCoverageOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -74,8 +76,32 @@ export default function AdminPage() {
   useEffect(() => {
     if (!isAdmin) {
       router.push("/admin/login");
+    } else {
+      fetchAlerts();
+      fetchValidationRecords();
     }
   }, [isAdmin, router]);
+
+  const fetchValidationRecords = async () => {
+    try {
+      const res = await fetch('/api/admin/validation');
+      const json = await res.json();
+      if (json.data) setRecords(json.data);
+    } catch(e) {}
+  };
+
+  const fetchAlerts = async () => {
+    try {
+      const res = await fetch('/api/alerts');
+      const json = await res.json();
+      if (json.data) setAlerts(json.data.filter((a: any) => !a.isRead));
+    } catch(e) {}
+  };
+
+  const dismissAlert = async (id: number) => {
+    setAlerts(p => p.filter(a => a.id !== id));
+    await fetch('/api/alerts', { method: 'POST', body: JSON.stringify({ id }) });
+  };
 
   if (!isAdmin) return null;
 
@@ -84,30 +110,81 @@ export default function AdminPage() {
 
   const canUpload = sourceOffice && bulletinDate && coverage && selectedFile && selectedComms.length > 0;
 
-  const handleUpload = () => {
-    if (!canUpload) return;
+  const handleUpload = async () => {
+    if (!canUpload || !selectedFile) return;
     setUploading(true);
-    setTimeout(()=>{
+    
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+      
+      const res = await fetch("/api/upload-bulletin", {
+        method: "POST",
+        body: formData,
+        headers: {
+          'Authorization': 'Bearer admin-secret'
+        }
+      });
+      
+      if (!res.ok) {
+        throw new Error("Upload failed");
+      }
+      
+      const result = await res.json();
+
       const doc: UploadedDoc = {
-        id: Date.now(), filename: selectedFile, sourceOffice, bulletinDate, coverage,
-        docType, commodities: selectedComms, status: "processing",
+        id: result.data.id || Date.now(), 
+        filename: selectedFile.name, 
+        sourceOffice, 
+        bulletinDate, 
+        coverage,
+        docType, 
+        commodities: selectedComms, 
+        status: "processing",
         uploadedAt: new Date().toLocaleString("en-PH",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}),
       };
+      
       setUploads((p)=>[doc,...p]);
+      // Simulate it moving to validated after processing since our backend does it synchronously
       setTimeout(()=>setUploads((p)=>p.map((d)=>d.id===doc.id?{...d,status:"validated"}:d)), 2000);
+      
       setSourceOffice(""); setBulletinDate(""); setCoverage("");
-      setSelectedFile(""); setSelectedComms([]);
-      setUploading(false); setUploadSuccess(true);
+      setSelectedFile(null); setSelectedComms([]);
+      setUploadSuccess(true);
       setTimeout(()=>setUploadSuccess(false), 3500);
-    }, 1200);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to upload file");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const publishDoc  = (id: number) => setUploads((p)=>p.map((d)=>d.id===id&&d.status==="validated"?{...d,status:"published"}:d));
   const deleteDoc   = (id: number) => setUploads((p)=>p.filter((d)=>d.id!==id));
-  const updateRec   = (id: number, status: "approved"|"rejected") => setRecords((p)=>p.map((r)=>r.id===id?{...r,status}:r));
+  const updateRec = async (id: number, status: "approved"|"rejected") => {
+    try {
+      await fetch('/api/admin/validation', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer admin-secret'
+        },
+        body: JSON.stringify({ id, action: status })
+      });
+      // Move from pending (records) to done
+      const rec = records.find(r => r.id === id);
+      if (rec) {
+        setDone(p => [{ ...rec, status }, ...p]);
+        setRecords(p => p.filter(r => r.id !== id));
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Failed to update record');
+    }
+  };
 
-  const pending = records.filter((r)=>r.status==="pending");
-  const done    = records.filter((r)=>r.status!=="pending");
+  const pending = records;
 
   const onLogout = () => {
     logout();
@@ -125,6 +202,21 @@ export default function AdminPage() {
           </button>
         }
       />
+
+      {/* Alerts */}
+      {alerts.length > 0 && (
+        <div className="px-4 md:px-0 mb-4 space-y-2">
+          {alerts.map(alert => (
+            <div key={alert.id} className="bg-red-50 border border-red-200 p-3 rounded-xl flex items-start gap-3">
+              <AlertTriangle size={16} className="text-red-600 shrink-0 mt-0.5" />
+              <div className="flex-1 text-sm font-medium text-red-900">{alert.message}</div>
+              <button onClick={() => dismissAlert(alert.id)} className="text-red-500 hover:text-red-700">
+                <X size={16} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="admin-tabs flex bg-muted border-b border-border md:flex-col md:border md:rounded-2xl md:overflow-hidden md:bg-card">
@@ -160,7 +252,7 @@ export default function AdminPage() {
               <div>
                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">Dokumento</label>
                 <input ref={fileRef} type="file" accept=".pdf,image/*" className="hidden"
-                  onChange={(e)=>setSelectedFile(e.target.files?.[0]?.name??"")}/>
+                  onChange={(e)=>setSelectedFile(e.target.files?.[0] || null)}/>
                 <button onClick={()=>fileRef.current?.click()}
                   className={`w-full flex items-center gap-3 rounded-xl border-2 border-dashed px-4 py-4 transition-colors active:bg-muted ${
                     selectedFile?"border-primary bg-primary/5":"border-border bg-card"
@@ -168,7 +260,7 @@ export default function AdminPage() {
                   <Upload size={18} className={selectedFile?"text-primary":"text-muted-foreground"}/>
                   <div className="flex-1 text-left min-w-0">
                     {selectedFile
-                      ? <p className="text-sm font-semibold text-primary truncate">{selectedFile}</p>
+                      ? <p className="text-sm font-semibold text-primary truncate">{selectedFile.name}</p>
                       : <><p className="text-sm font-semibold text-muted-foreground">Pumili ng PDF o Image file</p><p className="text-xs text-muted-foreground">Mag-tap para mag-browse</p></>}
                   </div>
                   {selectedFile && <Check size={16} className="text-primary shrink-0"/>}
@@ -317,20 +409,20 @@ export default function AdminPage() {
               <SL>Para sa Review</SL>
               <div className="space-y-2">
                 {pending.map((r)=>(
-                  <div key={r.id} className={`bg-card rounded-xl border overflow-hidden ${r.flagged?"border-red-300":"border-border"}`}>
-                    {r.flagged && (
-                      <div className="flex items-center gap-2 px-4 py-2 bg-red-100 border-b border-red-200">
-                        <AlertTriangle size={13} className="text-red-600"/>
-                        <p className="text-xs font-semibold text-red-700">{r.flagReason}</p>
+                  <div key={r.id} className={`bg-card rounded-xl border overflow-hidden ${r.isProxy?"border-blue-300":"border-border"}`}>
+                    {r.isProxy && (
+                      <div className="flex items-center gap-2 px-4 py-2 bg-blue-100 border-b border-blue-200">
+                        <AlertTriangle size={13} className="text-blue-600"/>
+                        <p className="text-xs font-semibold text-blue-700">Generated Proxy Baseline</p>
                       </div>
                     )}
                     <div className="px-4 py-3">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
-                          <p className="text-sm font-bold text-foreground">{r.commodity}</p>
-                          <p className="text-xs text-muted-foreground">{r.location} · {r.date} · {r.source}</p>
+                          <p className="text-sm font-bold text-foreground">{r.commodity?.name}</p>
+                          <p className="text-xs text-muted-foreground">{r.market?.name} · {new Date(r.observedDate).toLocaleDateString()}</p>
                         </div>
-                        <p className={`text-lg font-extrabold shrink-0 ${r.flagged?"text-red-700":"text-foreground"}`}>₱{r.price}</p>
+                        <p className={`text-lg font-extrabold shrink-0 ${r.isProxy?"text-blue-700":"text-foreground"}`}>₱{r.price}</p>
                       </div>
                       <div className="flex gap-2">
                         <button onClick={()=>updateRec(r.id,"approved")}
@@ -351,13 +443,13 @@ export default function AdminPage() {
 
           {done.length > 0 && (
             <div>
-              <SL>Natapos na</SL>
+              <SL>Natapos na (Current Session)</SL>
               <div className="space-y-2">
                 {done.map((r)=>(
                   <div key={r.id} className="flex items-center justify-between bg-card rounded-xl px-4 py-3 border border-border">
                     <div>
-                      <p className="text-sm font-semibold text-foreground">{r.commodity} — ₱{r.price}</p>
-                      <p className="text-xs text-muted-foreground">{r.location} · {r.date}</p>
+                      <p className="text-sm font-semibold text-foreground">{r.commodity?.name} — ₱{r.price}</p>
+                      <p className="text-xs text-muted-foreground">{r.market?.name} · {new Date(r.observedDate).toLocaleDateString()}</p>
                     </div>
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${r.status==="approved"?"bg-green-100 text-green-700 border-green-200":"bg-red-100 text-red-700 border-red-200"}`}>
                       {r.status==="approved"?"Approved":"Tinanggihan"}
