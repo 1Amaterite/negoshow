@@ -45,7 +45,7 @@ const INITIAL_UPLOADS: UploadedDoc[] = [
 ];
 
 const COVERAGE_AREAS = ["Metro Manila", "NCR - Pasay City", "NCR - Quezon City", "NCR - Manila City", "Region IV-A"];
-const COMMODITY_NAMES = ["Sibuyas Pula", "Bawang", "Luya", "Kamatis", "Siling Labuyo", "Kangkong", "Pechay"];
+const COMMODITY_NAMES = ["Sibuyas Pula", "Bawang", "Luya", "Kamatis", "Siling Labuyo"];
 
 const DOC_STATUS: Record<DocStatus, { label: string; cls: string }> = {
   processing: { label: "Pinoproseso ng AI", cls: "bg-blue-50 text-blue-700 border-blue-200" },
@@ -112,7 +112,10 @@ export default function AdminPage() {
   const canUpload = sourceOffice && bulletinDate && coverage && selectedFile && selectedComms.length > 0;
 
   const handleUpload = async () => {
-    if (!canUpload || !selectedFile) return;
+    if (!canUpload || !selectedFile) {
+      alert("Mangyaring punan ang lahat ng patlang (Office, Date, Coverage, File, at mga Kalakal).");
+      return;
+    }
     setUploading(true);
     
     try {
@@ -245,7 +248,7 @@ export default function AdminPage() {
           )}
 
           {/* Form */}
-          <div className="bg-card rounded-xl border border-border overflow-hidden">
+          <div className="bg-card rounded-xl border border-border">
             <div className="px-4 py-3 border-b border-border flex items-center gap-2">
               <FilePlus size={14} className="text-primary"/>
               <p className="text-sm font-bold text-foreground">{t.admin.upload.title}</p>
@@ -334,7 +337,7 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <button onClick={handleUpload} disabled={!canUpload||uploading}
+              <button onClick={handleUpload} disabled={uploading}
                 className="w-full bg-primary text-white font-bold text-sm py-3.5 rounded-full flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none">
                 {uploading?<><RefreshCw size={14} className="animate-spin"/>{t.admin.upload.uploading}</>:<><Upload size={14}/>{t.admin.upload.uploadBtn}</>}
               </button>

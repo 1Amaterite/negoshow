@@ -69,7 +69,7 @@ export default function DashboardPage() {
       <div className="bg-background border border-border rounded-xl px-3 py-2 shadow-lg text-xs">
         <p className="font-bold text-foreground mb-1">{label}</p>
         {a?.value != null && <p className="text-primary font-semibold">{t.dashboard.actualPrice}: ₱{a.value}</p>}
-        {h?.value != null && <p className="text-amber-600 font-semibold">Hula: ₱{h.value}</p>}
+        {h?.value != null && <p className="text-amber-600 font-semibold">{t.dashboard.predictedPrice}: ₱{h.value}</p>}
       </div>
     );
   };
@@ -90,7 +90,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 gap-2 mb-5">
             <div className="bg-card rounded-2xl p-5 border border-border shadow-sm">
               <p className="text-xs text-muted-foreground mb-1">{t.dashboard.marketStability}</p>
-              <p className="text-xl font-extrabold text-amber-700">Katamtaman</p>
+              <p className="text-xl font-extrabold text-amber-700">{t.ui.medium}</p>
               <div className="flex items-center gap-1 mt-1">
                 <div className="flex gap-0.5">{[1,2,3].map(i=><div key={i} className={`h-1.5 w-4 rounded-full ${i<=2?"bg-amber-500":"bg-muted"}`}/>)}</div>
                 <span className="text-xs text-muted-foreground">2/3</span>
@@ -99,7 +99,7 @@ export default function DashboardPage() {
             <div className="bg-card rounded-2xl p-5 border border-border shadow-sm">
               <p className="text-xs text-muted-foreground mb-1">{t.dashboard.volatileCommodities}</p>
               <p className="text-xl font-extrabold text-red-600">{volatileCount} <span className="text-sm text-muted-foreground font-normal">sa {dynamicCommodities.length}</span></p>
-              <p className="text-xs text-red-600 font-semibold mt-1">Sibuyas Pula, Luya</p>
+              <p className="text-xs text-red-600 font-semibold mt-1">{dynamicCommodities.filter((c: any) => c.volatility === "High").map((c: any) => c.shortLabel).join(", ")}</p>
             </div>
             <div className="bg-card rounded-2xl p-5 border border-border shadow-sm">
               <p className="text-xs text-muted-foreground mb-1">{t.dashboard.avgPriceChange}</p>
@@ -115,14 +115,14 @@ export default function DashboardPage() {
 
           <SL>{t.dashboard.currentBaselineSummary}</SL>
           <div className="rounded-2xl border border-border overflow-hidden bg-card shadow-sm">
-            <div className="grid grid-cols-[1fr_52px_64px_56px] bg-muted px-3 py-2 border-b border-border">
+            <div className="grid grid-cols-[1fr_60px_76px_60px] bg-muted px-3 py-2 border-b border-border">
               {[t.dashboard.commodity, t.dashboard.price, t.dashboard.trend, t.dashboard.status].map((h)=>(
                 <p key={h} className={`text-[10px] font-bold uppercase tracking-wide text-muted-foreground ${h!==t.dashboard.commodity?"text-right":""}`}>{h}</p>
               ))}
             </div>
             {dynamicCommodities.map((c: any,i: number)=>(
               <button key={c.id} onClick={() => router.push(`/commodity/${c.id}`)}
-                className={`w-full grid grid-cols-[1fr_52px_64px_56px] items-center px-3 py-3 border-b border-border last:border-0 active:bg-muted transition-colors text-left ${i%2===0?"":"bg-card/40"}`}>
+                className={`w-full grid grid-cols-[1fr_60px_76px_60px] items-center px-3 py-3 border-b border-border last:border-0 active:bg-muted transition-colors text-left ${i%2===0?"":"bg-card/40"}`}>
                 <div className="flex items-center gap-2 min-w-0">
                   <CommodityImage commodity={c} size="sm"/>
                   <div className="min-w-0">
@@ -189,8 +189,8 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <SL>{t.dashboard.pricePrediction}</SL>
             <div className="flex gap-1 bg-muted p-1 rounded-lg">
-              <button onClick={() => setTimeframe("7")} className={`text-[10px] font-bold px-2 py-1 rounded ${timeframe==="7"?"bg-white shadow-sm":"text-muted-foreground"}`}>7 Araw</button>
-              <button onClick={() => setTimeframe("30")} className={`text-[10px] font-bold px-2 py-1 rounded ${timeframe==="30"?"bg-white shadow-sm":"text-muted-foreground"}`}>30 Araw</button>
+              <button onClick={() => setTimeframe("7")} className={`text-[10px] font-bold px-2 py-1 rounded ${timeframe==="7"?"bg-white shadow-sm":"text-muted-foreground"}`}>{t.commodity.days7}</button>
+              <button onClick={() => setTimeframe("30")} className={`text-[10px] font-bold px-2 py-1 rounded ${timeframe==="30"?"bg-white shadow-sm":"text-muted-foreground"}`}>{t.commodity.days30}</button>
             </div>
           </div>
           
@@ -224,9 +224,9 @@ export default function DashboardPage() {
                     <XAxis dataKey="araw" tick={{fontSize:9,fill:"#72796e"}} axisLine={false} tickLine={false}/>
                     <YAxis tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false} width={45} tickFormatter={(v: any)=>`₱${new Intl.NumberFormat('en-US').format(v)}`} domain={["auto","auto"]}/>
                     <Tooltip content={<PredTip/>}/>
-                    <ReferenceLine x="Jul 10" stroke="rgba(114,121,110,0.4)" strokeDasharray="4 4" label={{value:"Ngayon",position:"top",fontSize:9,fill:"#72796e"}}/>
-                    <Line type="monotone" dataKey="aktwal" name="Aktwal na Presyo" stroke="#154212" strokeWidth={2.5} dot={{fill:"#154212",r:3}} connectNulls={false}/>
-                    <Line type="monotone" dataKey="hula"   name="Hinulaang Presyo" stroke="#f59e0b" strokeWidth={2}   strokeDasharray="5 4" dot={{fill:"#f59e0b",r:3}} connectNulls={false}/>
+                    <ReferenceLine x="Jul 10" stroke="rgba(114,121,110,0.4)" strokeDasharray="4 4" label={{value:"Today",position:"top",fontSize:9,fill:"#72796e"}}/>
+                    <Line type="monotone" dataKey="aktwal" name={t.dashboard.actualPrice} stroke="#154212" strokeWidth={2.5} dot={{fill:"#154212",r:3}} connectNulls={false}/>
+                    <Line type="monotone" dataKey="hula"   name={t.dashboard.predictedPrice} stroke="#f59e0b" strokeWidth={2}   strokeDasharray="5 4" dot={{fill:"#f59e0b",r:3}} connectNulls={false}/>
                   </LineChart>
                 </ResponsiveContainer>
               )}

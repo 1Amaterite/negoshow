@@ -42,12 +42,30 @@ export async function GET(req: Request) {
       orderBy: { observedDate: 'asc' }
     });
 
-    // Format for Recharts
-    const data = prices.map(p => ({
+    let data = prices.map(p => ({
       araw: p.observedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       aktwal: Math.round(p.price),
-      hula: null
+      hula: null as number | null,
+      isPeak: false
     }));
+
+    if (data.length > 0) {
+      const lastPrice = data[data.length - 1].aktwal;
+      const lastDate = prices[prices.length - 1].observedDate;
+      // Connect actual to hula
+      data[data.length - 1].hula = lastPrice;
+      
+      for (let i = 1; i <= 2; i++) {
+        const nextDate = new Date(lastDate);
+        nextDate.setDate(nextDate.getDate() + (i * 3));
+        data.push({
+          araw: nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          aktwal: null as any,
+          hula: Math.round(lastPrice * (1 + (i * 0.05))),
+          isPeak: i === 2
+        });
+      }
+    }
 
     return NextResponse.json(data);
   } catch (error) {
