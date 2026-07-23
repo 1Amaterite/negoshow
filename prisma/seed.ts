@@ -50,6 +50,7 @@ async function main() {
         marketId: pasayMarket.id,
         price: basePrices[commodity.name],
         observedDate: new Date(),
+        isVerified: true,
       },
     });
     console.log(`Created baseline price for ${commodity.name}`);

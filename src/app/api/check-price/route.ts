@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getLatestBaseline, saveVendorQuote } from '@/services/priceService';
+import prisma from '@/services/dbService';
 
 export async function POST(req: NextRequest) {
   try {
@@ -13,11 +14,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    let marketId = typeof location === 'number' ? location : parseInt(location, 10);
+    if (isNaN(marketId)) {
+      const market = await prisma.market.findFirst({
+        where: { name: { contains: String(location) } }
+      });
+      marketId = market ? market.id : 1;
+    }
+
     // Save the vendor quote. Our service logic already records it in the database.
-    const vendorQuote = await saveVendorQuote(commodityId, location, quotedPrice);
+    const vendorQuote = await saveVendorQuote(Number(commodityId), marketId, Number(quotedPrice));
 
     // Fetch the baseline to calculate the variance precisely for the response
-    const baseline = await getLatestBaseline(commodityId, location);
+    const baseline = await getLatestBaseline(Number(commodityId), marketId);
 
     if (!baseline) {
       return NextResponse.json({
