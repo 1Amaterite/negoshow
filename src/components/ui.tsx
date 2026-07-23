@@ -5,15 +5,30 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Commodity } from "@/lib/types";
 
+import { useTranslation } from "@/context/LanguageContext";
+
 export function KalagayanChip({ volatility }: { volatility: string }) {
+  const { t } = useTranslation();
+  
   const s: Record<string, string> = {
+    High: "bg-red-100 text-red-700 border border-red-200",
+    Medium: "bg-amber-100 text-amber-700 border border-amber-200",
+    Low: "bg-green-100 text-green-700 border border-green-200",
+    // Fallbacks just in case
     Mataas: "bg-red-100 text-red-700 border border-red-200",
     Katamtaman: "bg-amber-100 text-amber-700 border border-amber-200",
     Mababa: "bg-green-100 text-green-700 border border-green-200",
   };
+  
+  // Resolve localized label based on the underlying value
+  let label = volatility;
+  if (volatility === "High" || volatility === "Mataas") label = t.ui.high;
+  else if (volatility === "Medium" || volatility === "Katamtaman") label = t.ui.medium;
+  else if (volatility === "Low" || volatility === "Mababa") label = t.ui.low;
+
   return (
-    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${s[volatility] || s.Mababa}`}>
-      {volatility}
+    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${s[volatility] || s.Low}`}>
+      {label}
     </span>
   );
 }
@@ -50,6 +65,7 @@ export function PageHeader({
   right?: React.ReactNode;
 }) {
   const router = useRouter();
+  const { t } = useTranslation();
   
   const handleBack = onBack || (() => router.back());
 
@@ -59,7 +75,7 @@ export function PageHeader({
         {handleBack && (
           <button
             type="button"
-            aria-label="Bumalik"
+            aria-label={t.ui.back}
             onClick={handleBack}
             className="w-9 h-9 rounded-full bg-muted flex items-center justify-center active:scale-95 transition-transform shrink-0"
           >
@@ -89,11 +105,12 @@ export function CommodityImage({
   size?: "sm" | "md" | "lg";
   className?: string;
 }) {
+  const { lang } = useTranslation();
   const sizes = { sm: "w-8 h-8", md: "w-11 h-11", lg: "w-14 h-14" };
   return (
     <img
       src={commodity.image}
-      alt={commodity.tagalog}
+      alt={lang === 'tl' ? commodity.tagalog : commodity.name}
       loading="lazy"
       className={`${sizes[size]} rounded-xl object-contain p-1 border border-border/70 bg-[#faf8f3] shrink-0 ${className}`}
     />

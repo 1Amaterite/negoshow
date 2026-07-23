@@ -260,6 +260,32 @@ export const en = {
     back: "Back",
     save: "Save",
     cancel: "Cancel",
+  },
+  more: {
+    title: "More Options",
+    transparencyBtn: "Source Transparency",
+    transparencyDesc: "View DA and LGU source bulletins",
+    adminBtn: "Admin Upload & Validation",
+    adminDesc: "Upload documents & validate records",
+    adminRestricted: "Restricted — login required",
+    aboutBtn: "About NegoShow",
+    aboutDesc: "Purpose, team, and data sources",
+    version: "Talipapa Utility v1.0 MVP",
+    footer: "ITISDEV Group 6 · Pasay City, 2026",
+  },
+  error: {
+    title: "Sorry, something went wrong",
+    message: "We couldn't load the data right now. There might be a connection or server issue.",
+    retry: "Try Again",
+  },
+  loading: {
+    message: "Loading data...",
+  },
+  ui: {
+    back: "Go back",
+    high: "High",
+    medium: "Medium",
+    low: "Low",
   }
 };
 

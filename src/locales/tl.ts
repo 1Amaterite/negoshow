@@ -262,5 +262,31 @@ export const tl: TranslationKeys = {
     back: "Bumalik",
     save: "I-save",
     cancel: "Kanselahin",
+  },
+  more: {
+    title: "Iba pang Opsyon",
+    transparencyBtn: "Source Transparency",
+    transparencyDesc: "Mga DA/LGU bulletin na pinagkukunan",
+    adminBtn: "Admin Upload & Validation",
+    adminDesc: "Mag-upload ng dokumento at i-validate ang records",
+    adminRestricted: "Restricted — kailangan mag-login",
+    aboutBtn: "Tungkol sa NegoShow",
+    aboutDesc: "Layunin, team, at source ng datos",
+    version: "Talipapa Utility v1.0 MVP",
+    footer: "ITISDEV Group 6 · Pasay City, 2026",
+  },
+  error: {
+    title: "Paumanhin, may nangyaring aberya",
+    message: "Hindi namin ma-load ang datos sa ngayon. Maaaring may problema sa koneksyon o sa server.",
+    retry: "Subukan Muli",
+  },
+  loading: {
+    message: "Nagloload ng datos...",
+  },
+  ui: {
+    back: "Bumalik",
+    high: "Mataas",
+    medium: "Katamtaman",
+    low: "Mababa",
   }
 };
