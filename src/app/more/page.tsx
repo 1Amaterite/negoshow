@@ -1,14 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Settings, User, BookOpen, Shield, ChevronRight, LogOut, Database, Lock } from "lucide-react";
 import { PageHeader } from "@/components/ui";
-import { useGlobal } from "@/lib/GlobalContext";
 import { useTranslation } from "@/context/LanguageContext";
 
 export default function MorePage() {
   const router = useRouter();
-  const { isAdmin } = useGlobal();
+  const { data: session } = useSession();
+  const isAdmin = !!session;
   const { t } = useTranslation();
 
   return (

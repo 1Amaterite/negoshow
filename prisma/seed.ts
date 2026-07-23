@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -55,6 +56,21 @@ async function main() {
     });
     console.log(`Created baseline price for ${commodity.name}`);
   }
+
+  const adminPassword = 'admin123';
+  const hashedPassword = await bcrypt.hash(adminPassword, 10);
+
+  const admin = await prisma.adminUser.upsert({
+    where: { username: 'admin' },
+    update: {
+      password: hashedPassword,
+    },
+    create: {
+      username: 'admin',
+      password: hashedPassword,
+    },
+  });
+  console.log(`Upserted AdminUser: ${admin.username}`);
 
   console.log('Database seeding completed.');
 }

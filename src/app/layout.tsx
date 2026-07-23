@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import '../styles/index.css';
-import { GlobalProvider } from '@/lib/GlobalContext';
+import '../styles/index.css';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { AppShell } from '@/components/AppShell';
 import { QueryProvider } from '@/components/QueryProvider';
+import { AuthProvider } from '@/components/AuthProvider';
 
 export const metadata: Metadata = {
   title: 'Ne-goshow DSS',
@@ -18,15 +19,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body suppressHydrationWarning>
-        <QueryProvider>
-          <GlobalProvider>
+        <AuthProvider>
+          <QueryProvider>
             <LanguageProvider>
               <AppShell>
                 {children}
               </AppShell>
             </LanguageProvider>
-          </GlobalProvider>
-        </QueryProvider>
+          </QueryProvider>
+        </AuthProvider>
       </body>
     </html>
   );

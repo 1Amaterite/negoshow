@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import { LogOut, Upload, Database, CheckCircle, FilePlus, Check, MapPin, ChevronDown, RefreshCw, Clock, Trash2, Info, AlertTriangle, X } from "lucide-react";
 import { PageHeader, SL } from "@/components/ui";
-import { useGlobal } from "@/lib/GlobalContext";
 import { useTranslation } from "@/context/LanguageContext";
 
 type AdminTab = "upload" | "validate";
@@ -55,7 +55,8 @@ const DOC_STATUS: Record<DocStatus, { label: string; cls: string }> = {
 
 export default function AdminPage() {
   const router = useRouter();
-  const { isAdmin, logout } = useGlobal();
+  const { data: session, status } = useSession();
+  const isAdmin = status === "authenticated";
   const { t, lang } = useTranslation();
   const [tab, setTab] = useState<AdminTab>("upload");
   const [records, setRecords] = useState<any[]>([]);
@@ -76,13 +77,11 @@ export default function AdminPage() {
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (!isAdmin) {
-      router.push("/admin/login");
-    } else {
+    if (isAdmin) {
       fetchAlerts();
       fetchValidationRecords();
     }
-  }, [isAdmin, router]);
+  }, [isAdmin]);
 
   const fetchValidationRecords = async () => {
     try {
@@ -105,7 +104,7 @@ export default function AdminPage() {
     await fetch('/api/alerts', { method: 'POST', body: JSON.stringify({ id }) });
   };
 
-  if (!isAdmin) return null;
+
 
   const toggleComm = (name: string) =>
     setSelectedComms((p) => p.includes(name) ? p.filter((c)=>c!==name) : [...p, name]);
@@ -188,19 +187,22 @@ export default function AdminPage() {
 
   const pending = records;
 
-  const onLogout = () => {
-    logout();
-    router.push("/more");
-  };
+  if (status === "loading") {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+  
+  if (!isAdmin) {
+    return null;
+  }
 
   return (
     <div className="admin-dashboard min-h-screen bg-muted/30">
       <PageHeader
         title="Dashboard ng Admin" subtitle="NegoShow Talipapa Utility" onBack={() => router.push("/more")}
         right={
-          <button onClick={onLogout}
-            className="flex items-center gap-1.5 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 px-3 py-1.5 rounded-full active:scale-95 transition-transform">
-            <LogOut size={12}/>Mag-logout
+          <button onClick={() => signOut({ callbackUrl: '/admin/login' })} className="flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-red-600 transition-colors bg-white/50 px-3 py-1.5 rounded-full border border-border/50">
+            <LogOut size={14}/>
+            <span className="hidden sm:inline">{t.admin.logout}</span>
           </button>
         }
       />

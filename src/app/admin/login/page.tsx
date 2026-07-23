@@ -3,13 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Lock, Eye, EyeOff, AlertTriangle, RefreshCw } from "lucide-react";
+import { signIn } from "next-auth/react";
 import { PageHeader } from "@/components/ui";
-import { useGlobal } from "@/lib/GlobalContext";
 import { useTranslation } from "@/context/LanguageContext";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const { login: doLogin } = useGlobal();
   const { t } = useTranslation();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -35,24 +34,26 @@ export default function AdminLoginPage() {
     setLoading(true);
     setError("");
     setFieldErrors({});
-    
-    // MVP hardcoded auth
-    setTimeout(() => {
-      const success = doLogin(password);
-      if (cleanUsername === "admin" && success) {
-        setAttempts(0);
-        router.push("/admin");
-      } else {
-        const nextAttempts = attempts + 1;
-        setAttempts(nextAttempts);
-        setError(nextAttempts >= 3
-          ? t.login.failedAttempts
-          : t.login.tryAgain);
-        setPassword("");
-        setFieldErrors({ password: t.login.invalidCredentials });
-      }
+    // Call NextAuth signIn
+    const result = await signIn("credentials", {
+      redirect: false,
+      username: cleanUsername,
+      password: password,
+    });
+
+    if (result?.error) {
+      const nextAttempts = attempts + 1;
+      setAttempts(nextAttempts);
+      setError(nextAttempts >= 3
+        ? t.login.failedAttempts
+        : t.login.tryAgain);
+      setPassword("");
+      setFieldErrors({ password: t.login.invalidCredentials });
       setLoading(false);
-    }, 800);
+    } else {
+      setAttempts(0);
+      router.push("/admin");
+    }
   };
 
   return (
