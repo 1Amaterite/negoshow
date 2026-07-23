@@ -20,20 +20,35 @@ async function main() {
   console.log(`Upserted Market: ${pasayMarket.name}`);
 
   // Create Commodities
-  const commoditiesData = [
-    { name: 'Red Onions', unit: 'kg', description: 'Local red onions', imageUrl: '/images/red-onion.png' },
-    { name: 'White Onions', unit: 'kg', description: 'Imported white onions', imageUrl: '/images/white-onion.png' },
-    { name: 'Garlic', unit: 'kg', description: 'Native garlic', imageUrl: '/images/garlic.png' },
-    { name: 'Ginger', unit: 'kg', description: 'Fresh ginger', imageUrl: '/images/ginger.png' },
-    { name: 'Potatoes', unit: 'kg', description: 'Baguio potatoes', imageUrl: '/images/potato.png' },
-  ];
+  const commodities = await Promise.all([
+    prisma.commodity.upsert({
+      where: { name: 'Red Onions' },
+      update: { imageUrl: '/images/commodities/red-onion.webp' },
+      create: { name: 'Red Onions', unit: 'kg', description: 'Local red onions', imageUrl: '/images/commodities/red-onion.webp' },
+    }),
+    prisma.commodity.upsert({
+      where: { name: 'White Onions' },
+      update: { imageUrl: '/images/commodities/white-onion.webp' },
+      create: { name: 'White Onions', unit: 'kg', description: 'Imported white onions', imageUrl: '/images/commodities/white-onion.webp' },
+    }),
+    prisma.commodity.upsert({
+      where: { name: 'Garlic' },
+      update: { imageUrl: '/images/commodities/garlic.webp' },
+      create: { name: 'Garlic', unit: 'kg', description: 'Native garlic', imageUrl: '/images/commodities/garlic.webp' },
+    }),
+    prisma.commodity.upsert({
+      where: { name: 'Ginger' },
+      update: { imageUrl: '/images/commodities/ginger.webp' },
+      create: { name: 'Ginger', unit: 'kg', description: 'Fresh ginger', imageUrl: '/images/commodities/ginger.webp' },
+    }),
+    prisma.commodity.upsert({
+      where: { name: 'Potatoes' },
+      update: { imageUrl: '/images/commodities/potato.webp' },
+      create: { name: 'Potatoes', unit: 'kg', description: 'Baguio potatoes', imageUrl: '/images/commodities/potato.webp' },
+    }),
+  ]);
 
-  for (const c of commoditiesData) {
-    const commodity = await prisma.commodity.upsert({
-      where: { name: c.name },
-      update: c,
-      create: c,
-    });
+  for (const commodity of commodities) {
     console.log(`Upserted Commodity: ${commodity.name}`);
 
     // Create 30 days of historical data for charts
