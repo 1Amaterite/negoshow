@@ -154,8 +154,8 @@ export const tl: TranslationKeys = {
     recommended: "Inirerekomenda",
     baseline: "Baseline",
     quoted: "Quoted",
-    cheaperSource: "Mas Murang Malapit na Source",
-    verifiedSource: "Beripikado source",
+    cheaperSource: "Mas Murang Malapit na Bilihan",
+    verifiedSource: "Beripikadong pinagmulan",
     savePer10kg: "Sa 10 kilo: makatitipid ka ng ₱{{amt}}",
     vendorTips: "Tips para sa Vendor",
     flaggedNotice: "Ang iyong quote (₱{{quotedPrice}}) ay {{pct}}% na mas mataas sa baseline.",
@@ -242,7 +242,7 @@ export const tl: TranslationKeys = {
     viewAdvisor: "Tingnan ang Procurement Advisor"
   },
   transparency: {
-    title: "Source Transparency",
+    title: "Pinagmulan ng Datos",
     subtitle: "Mga opisyal na bulletin na pinagkukunan",
     infoText: "Lahat ng baseline presyo ay nagmumula sa mga opisyal na DA at LGU price bulletin na na-upload ng admin team at nire-review bago i-publish.",
     verified: "Beripikado",
@@ -265,9 +265,9 @@ export const tl: TranslationKeys = {
   },
   more: {
     title: "Iba pang Opsyon",
-    transparencyBtn: "Source Transparency",
-    transparencyDesc: "Mga DA/LGU bulletin na pinagkukunan",
-    adminBtn: "Admin Upload & Validation",
+    transparencyBtn: "Pinagmulan ng Datos",
+    transparencyDesc: "Tingnan ang mga DA/LGU bulletin",
+    adminBtn: "Admin Dashboard",
     adminDesc: "Mag-upload ng dokumento at i-validate ang records",
     adminRestricted: "Restricted — kailangan mag-login",
     aboutBtn: "Tungkol sa NegoShow",
