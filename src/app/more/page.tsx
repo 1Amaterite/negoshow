@@ -46,6 +46,22 @@ export default function MorePage() {
           <ChevronRight size={14} className="text-muted-foreground"/>
         </button>
 
+        {isAdmin && (
+          <button 
+            onClick={() => window.open("/api/reports/export", "_blank")}
+            className="w-full flex items-center gap-3 bg-card rounded-xl px-4 py-3.5 border border-border transition-colors hover:border-primary/30 text-left active:scale-[0.98]"
+          >
+            <div className="w-9 h-9 rounded-lg bg-blue-100 border border-blue-200 flex items-center justify-center shrink-0">
+              <Database size={16} className="text-blue-700"/>
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-foreground">{t.more.downloadReportBtn || "Download LGU Report (CSV)"}</p>
+              <p className="text-xs text-muted-foreground">{t.more.downloadReportDesc || "Export all recent pricing data"}</p>
+            </div>
+            <ChevronRight size={14} className="text-muted-foreground"/>
+          </button>
+        )}
+
         <button className="w-full flex items-center gap-3 bg-card rounded-xl px-4 py-3.5 border border-border transition-colors text-left opacity-50 pointer-events-none">
           <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0"><BookOpen size={16} className="text-primary"/></div>
           <div className="flex-1">

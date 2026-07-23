@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { TrendingUp, TrendingDown, Minus, AlertTriangle, Clock, Info, Navigation, Shield } from "lucide-react";
-import { COMMODITIES, PREDICTION_DATA, VARIANCE_DATA } from "@/lib/data";
 import { SL, CommodityImage, KalagayanChip } from "@/components/ui";
 import { useTranslation } from "@/context/LanguageContext";
+import { useQuery } from "@tanstack/react-query";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, ResponsiveContainer,
   Tooltip, CartesianGrid, ReferenceLine, Cell,
@@ -13,34 +13,43 @@ import {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { t, lang } = useTranslation();
-  const [dynamicCommodities, setDynamicCommodities] = useState(COMMODITIES);
-  const [predC, setPredC] = useState(COMMODITIES[0]);
+  const { t } = useTranslation();
+  
+  const [predCId, setPredCId] = useState<string | null>(null);
+  const [timeframe, setTimeframe] = useState<"7" | "30">("30");
 
-  useEffect(() => {
-    fetch('/api/baselines')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data) && data.length > 0) {
-          const updated = COMMODITIES.map(c => {
-            const match = data.find(b => b.commodity.name.includes(c.name) || c.name.includes(b.commodity.name));
-            if (match) {
-              return { ...c, baseline: match.price };
-            }
-            return c;
-          });
-          setDynamicCommodities(updated);
-          // Keep predC synced if needed, but it uses id anyway
-        }
-      })
-      .catch(err => console.error("Failed to fetch baselines:", err));
-  }, []);
+  const { data: dynamicCommodities = [], isLoading: isCommsLoading } = useQuery({
+    queryKey: ['commodities'],
+    queryFn: async () => {
+      const res = await fetch('/api/commodities');
+      const data = await res.json();
+      if (!predCId && data.length > 0) setPredCId(data[0].id);
+      return data;
+    }
+  });
 
-  const predData = PREDICTION_DATA[predC.id] ?? PREDICTION_DATA["red-onion"];
-  const peak = predData.find((d) => d.isPeak);
-  const volatileCount = dynamicCommodities.filter((c) => c.volatility === "High").length;
-  const avgChange = (dynamicCommodities.reduce((s,c) => s + c.change, 0) / dynamicCommodities.length).toFixed(1);
-  const risingCount = dynamicCommodities.filter((c) => c.trend === "up").length;
+  const { data: predData = [], isLoading: isPredLoading } = useQuery({
+    queryKey: ['trend', predCId, timeframe],
+    queryFn: async () => {
+      if (!predCId) return [];
+      const res = await fetch(`/api/analytics/trend?commodityId=${predCId}&days=${timeframe}`);
+      return await res.json();
+    },
+    enabled: !!predCId
+  });
+
+  const VARIANCE_DATA = dynamicCommodities.map((c: any) => ({
+    name: c.shortLabel,
+    "30-Araw na Karaniwan": c.baseline30d,
+    "Kasalukuyan": c.baseline,
+    variancePct: parseFloat(c.change.toFixed(1)),
+  }));
+
+  const predC = dynamicCommodities.find((c: any) => c.id === predCId) || dynamicCommodities[0];
+  const peak = predData.find((d: any) => d.isPeak);
+  const volatileCount = dynamicCommodities.filter((c: any) => c.volatility === "High").length;
+  const avgChange = dynamicCommodities.length > 0 ? (dynamicCommodities.reduce((s: number,c: any) => s + c.change, 0) / dynamicCommodities.length).toFixed(1) : "0.0";
+  const risingCount = dynamicCommodities.filter((c: any) => c.trend === "up").length;
 
   const VarTip = ({ active, payload }: any) => {
     if (!active || !payload?.length) return null;
@@ -65,6 +74,8 @@ export default function DashboardPage() {
     );
   };
 
+  if (isCommsLoading) return <div className="p-8 text-center text-muted-foreground">Loading dashboard data...</div>;
+
   return (
     <div className="dashboard-page">
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-5 md:px-10 lg:px-14 py-4 md:py-5">
@@ -87,7 +98,7 @@ export default function DashboardPage() {
             </div>
             <div className="bg-card rounded-2xl p-5 border border-border shadow-sm">
               <p className="text-xs text-muted-foreground mb-1">{t.dashboard.volatileCommodities}</p>
-              <p className="text-xl font-extrabold text-red-600">{volatileCount} <span className="text-sm text-muted-foreground font-normal">sa 5</span></p>
+              <p className="text-xl font-extrabold text-red-600">{volatileCount} <span className="text-sm text-muted-foreground font-normal">sa {dynamicCommodities.length}</span></p>
               <p className="text-xs text-red-600 font-semibold mt-1">Sibuyas Pula, Luya</p>
             </div>
             <div className="bg-card rounded-2xl p-5 border border-border shadow-sm">
@@ -109,7 +120,7 @@ export default function DashboardPage() {
                 <p key={h} className={`text-[10px] font-bold uppercase tracking-wide text-muted-foreground ${h!==t.dashboard.commodity?"text-right":""}`}>{h}</p>
               ))}
             </div>
-            {dynamicCommodities.map((c,i)=>(
+            {dynamicCommodities.map((c: any,i: number)=>(
               <button key={c.id} onClick={() => router.push(`/commodity/${c.id}`)}
                 className={`w-full grid grid-cols-[1fr_52px_64px_56px] items-center px-3 py-3 border-b border-border last:border-0 active:bg-muted transition-colors text-left ${i%2===0?"":"bg-card/40"}`}>
                 <div className="flex items-center gap-2 min-w-0">
@@ -149,21 +160,21 @@ export default function DashboardPage() {
                   <Tooltip content={<VarTip/>}/>
                   <Bar dataKey="30-Araw na Karaniwan" fill="#c8a97a" radius={[4,4,0,0]}/>
                   <Bar dataKey="Kasalukuyan" radius={[4,4,0,0]}>
-                    {VARIANCE_DATA.map((d,i)=><Cell key={i} fill={d.variancePct>10?"#c62828":d.variancePct<-10?"#2d5a27":"#154212"}/>)}
+                    {VARIANCE_DATA.map((d: any,i: number)=><Cell key={i} fill={d.variancePct>10?"#c62828":d.variancePct<-10?"#2d5a27":"#154212"}/>)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
           <div className="space-y-1.5">
-            {VARIANCE_DATA.filter((d)=>Math.abs(d.variancePct)>10).map((d)=>{
+            {VARIANCE_DATA.filter((d: any)=>Math.abs(d.variancePct)>10).map((d: any)=>{
               const hi = d.variancePct > 0;
               return (
                 <div key={d.name} className={`flex items-center justify-between rounded-xl px-4 py-3 border ${hi?"bg-red-50 border-red-200":"bg-green-50 border-green-200"}`}>
                   <div>
                     <p className="text-xs font-bold text-foreground">{d.name}</p>
                     <p className={`text-[10px] font-semibold ${hi?"text-red-600":"text-green-700"}`}>
-                      {hi?t.dashboard.higherThan30.replace('{{amt}}', (d["Kasalukuyan"]-d["30-Araw na Karaniwan"]).toString()) : t.dashboard.lowerThan30.replace('{{amt}}', (d["30-Araw na Karaniwan"]-d["Kasalukuyan"]).toString())}
+                      {hi?t.dashboard.higherThan30.replace('{{amt}}', (d["Kasalukuyan"]-d["30-Araw na Karaniwan"]).toFixed(1)) : t.dashboard.lowerThan30.replace('{{amt}}', (d["30-Araw na Karaniwan"]-d["Kasalukuyan"]).toFixed(1))}
                     </p>
                   </div>
                   <span className={`text-base font-extrabold ${hi?"text-red-600":"text-green-700"}`}>{hi?"+":""}{d.variancePct}%</span>
@@ -171,20 +182,23 @@ export default function DashboardPage() {
               );
             })}
           </div>
-          <p className="text-[10px] text-muted-foreground mt-2 flex items-start gap-1 leading-relaxed">
-            <Info size={10} className="mt-0.5 shrink-0"/>
-            {t.dashboard.varianceInfo.replace('{{roPct}}', VARIANCE_DATA[0].variancePct.toString()).replace('{{gPct}}', VARIANCE_DATA[3].variancePct.toString())}
-          </p>
         </section>
 
         {/* PREDICTIVE */}
         <section className="dashboard-section dashboard-forecast mt-8">
-          <SL>{t.dashboard.pricePrediction}</SL>
-          <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1 scrollbar-hide">
-            {dynamicCommodities.map((c)=>(
-              <button key={c.id} onClick={()=>setPredC(c)}
+          <div className="flex items-center justify-between">
+            <SL>{t.dashboard.pricePrediction}</SL>
+            <div className="flex gap-1 bg-muted p-1 rounded-lg">
+              <button onClick={() => setTimeframe("7")} className={`text-[10px] font-bold px-2 py-1 rounded ${timeframe==="7"?"bg-white shadow-sm":"text-muted-foreground"}`}>7 Araw</button>
+              <button onClick={() => setTimeframe("30")} className={`text-[10px] font-bold px-2 py-1 rounded ${timeframe==="30"?"bg-white shadow-sm":"text-muted-foreground"}`}>30 Araw</button>
+            </div>
+          </div>
+          
+          <div className="flex gap-1.5 mb-3 mt-2 overflow-x-auto pb-1 scrollbar-hide">
+            {dynamicCommodities.map((c: any)=>(
+              <button key={c.id} onClick={()=>setPredCId(c.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border whitespace-nowrap transition-colors shrink-0 ${
-                  predC.id===c.id?"bg-primary text-white border-primary":"bg-card border-border text-foreground"
+                  predC?.id===c.id?"bg-primary text-white border-primary":"bg-card border-border text-foreground"
                 }`}><CommodityImage commodity={c} size="sm" className="!w-6 !h-6 !rounded-md"/>{c.shortLabel}</button>
             ))}
           </div>
@@ -203,17 +217,19 @@ export default function DashboardPage() {
                   <span className="text-[10px] text-muted-foreground font-semibold">{t.dashboard.predictedPrice}</span>
                 </div>
               </div>
-              <ResponsiveContainer width="100%" height={280}>
-                <LineChart data={predData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(114,121,110,0.15)"/>
-                  <XAxis dataKey="araw" tick={{fontSize:9,fill:"#72796e"}} axisLine={false} tickLine={false}/>
-                  <YAxis tick={{fontSize:9,fill:"#72796e"}} axisLine={false} tickLine={false} width={34} tickFormatter={(v: any)=>`₱${v}`} domain={["auto","auto"]}/>
-                  <Tooltip content={<PredTip/>}/>
-                  <ReferenceLine x="Jul 10" stroke="rgba(114,121,110,0.4)" strokeDasharray="4 4" label={{value:"Ngayon",position:"top",fontSize:9,fill:"#72796e"}}/>
-                  <Line type="monotone" dataKey="aktwal" name="Aktwal na Presyo" stroke="#154212" strokeWidth={2.5} dot={{fill:"#154212",r:3}} connectNulls={false}/>
-                  <Line type="monotone" dataKey="hula"   name="Hinulaang Presyo" stroke="#f59e0b" strokeWidth={2}   strokeDasharray="5 4" dot={{fill:"#f59e0b",r:3}} connectNulls={false}/>
-                </LineChart>
-              </ResponsiveContainer>
+              {isPredLoading ? <div className="h-[280px] flex items-center justify-center text-xs text-muted-foreground">Loading chart...</div> : (
+                <ResponsiveContainer width="100%" height={280}>
+                  <LineChart data={predData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(114,121,110,0.15)"/>
+                    <XAxis dataKey="araw" tick={{fontSize:9,fill:"#72796e"}} axisLine={false} tickLine={false}/>
+                    <YAxis tick={{fontSize:9,fill:"#72796e"}} axisLine={false} tickLine={false} width={34} tickFormatter={(v: any)=>`₱${v}`} domain={["auto","auto"]}/>
+                    <Tooltip content={<PredTip/>}/>
+                    <ReferenceLine x="Jul 10" stroke="rgba(114,121,110,0.4)" strokeDasharray="4 4" label={{value:"Ngayon",position:"top",fontSize:9,fill:"#72796e"}}/>
+                    <Line type="monotone" dataKey="aktwal" name="Aktwal na Presyo" stroke="#154212" strokeWidth={2.5} dot={{fill:"#154212",r:3}} connectNulls={false}/>
+                    <Line type="monotone" dataKey="hula"   name="Hinulaang Presyo" stroke="#f59e0b" strokeWidth={2}   strokeDasharray="5 4" dot={{fill:"#f59e0b",r:3}} connectNulls={false}/>
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
           <p className="text-[10px] text-muted-foreground mt-2 flex items-start gap-1 leading-relaxed">
@@ -237,7 +253,7 @@ export default function DashboardPage() {
 
         <div className="dashboard-updated flex items-center gap-2 bg-card rounded-xl px-4 py-3 border border-border mt-8">
           <Clock size={14} className="text-muted-foreground"/>
-          <p className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{t.dashboard.lastUpdate}:</span> Jul 10, 2026 · 9:00 AM · DA Bulletin</p>
+          <p className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{t.dashboard.lastUpdate}:</span> {new Date().toLocaleDateString()} · DA Bulletin</p>
         </div>
       </div>
     </div>

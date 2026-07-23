@@ -1,52 +1,55 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, MapPin, ChevronDown, Check, CheckCircle, AlertTriangle, Navigation, Shield } from "lucide-react";
-import { COMMODITIES, LOCATIONS } from "@/lib/data";
-import { Commodity } from "@/lib/types";
+import { Search, MapPin, ChevronDown, Check, CheckCircle, AlertTriangle, Navigation, Shield, Users } from "lucide-react";
+import { LOCATIONS } from "@/lib/data";
 import { PageHeader, SL, CommodityImage } from "@/components/ui";
 import { useTranslation } from "@/context/LanguageContext";
+import { useQuery } from "@tanstack/react-query";
+import { QuoteCheckerWalkthrough } from "@/components/QuoteCheckerWalkthrough";
 
 export default function CheckerPage() {
   const router = useRouter();
   const { t, lang } = useTranslation();
   const [checkerStep, setCheckerStep] = useState<"input" | "result">("input");
-  const [checkerCommodity, setCheckerCommodity] = useState<Commodity | null>(null);
+  const [checkerCommodity, setCheckerCommodity] = useState<any | null>(null);
   const [quotedPrice, setQuotedPrice] = useState("");
   const [checkerLocation, setCheckerLocation] = useState("");
   const [checkResult, setCheckResult] = useState<"fair" | "flagged" | null>(null);
   const [locationOpen, setLocationOpen] = useState(false);
-  const [liveBaselines, setLiveBaselines] = useState<any[]>([]);
   const [varianceData, setVarianceData] = useState<{variancePercentage: number, recommendation: string} | null>(null);
 
-  useEffect(() => {
-    fetch('/api/baselines')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) setLiveBaselines(data);
-      })
-      .catch(err => console.error("Failed to fetch baselines:", err));
-  }, []);
+  const { data: dynamicCommodities = [], isLoading } = useQuery({
+    queryKey: ['commodities'],
+    queryFn: async () => {
+      const res = await fetch('/api/commodities');
+      return await res.json();
+    }
+  });
+
+  const { data: peerData = null, refetch: fetchPeers } = useQuery({
+    queryKey: ['peers', checkerCommodity?.id, checkerLocation],
+    queryFn: async () => {
+      if (!checkerCommodity || !checkerLocation) return null;
+      const marketId = 1; // Assuming 1 for MVP Pasay
+      const res = await fetch(`/api/analytics/peers?commodityId=${checkerCommodity.id}&marketId=${marketId}`);
+      if (!res.ok) return null;
+      return await res.json();
+    },
+    enabled: false // Only fetch manually after check
+  });
 
   const onCheck = async () => {
     if (!checkerCommodity || !quotedPrice || !checkerLocation) return;
-    
-    // Find the live baseline for the selected commodity
-    const dbCommodity = liveBaselines.find(b => b.commodity.name.startsWith(checkerCommodity.name))?.commodity;
-    const dbLocation = liveBaselines.find(b => b.market.name === checkerLocation)?.market;
-    
-    // For MVP, default to IDs if not found perfectly
-    const commodityId = dbCommodity?.id || COMMODITIES.indexOf(checkerCommodity) + 1;
-    const marketId = dbLocation?.id || 1;
 
     try {
       const res = await fetch("/api/check-price", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          commodityId: commodityId,
-          location: marketId,
+          commodityId: checkerCommodity.id,
+          location: 1, // MVP
           quotedPrice: parseFloat(quotedPrice),
         }),
       });
@@ -57,6 +60,10 @@ export default function CheckerPage() {
         variancePercentage: data.variancePercentage,
         recommendation: data.recommendation
       });
+      
+      // Fetch peers after we get the result
+      fetchPeers();
+      
       setCheckerStep("result");
     } catch (err) {
       console.error("Failed to save price check:", err);
@@ -64,6 +71,7 @@ export default function CheckerPage() {
       const variance = (parseFloat(quotedPrice) - checkerCommodity.baseline) / checkerCommodity.baseline;
       setCheckResult(variance > 0.15 ? "flagged" : "fair");
       setCheckerStep("result");
+      fetchPeers();
     }
   };
 
@@ -75,19 +83,18 @@ export default function CheckerPage() {
 
   const canSubmit = checkerCommodity && quotedPrice && parseFloat(quotedPrice) > 0 && checkerLocation;
 
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading commodities...</div>;
+
   if (checkerStep === "result" && checkResult && checkerCommodity) {
     const isFair = checkResult === "fair";
     const quoted = parseFloat(quotedPrice);
     
-    const liveData = liveBaselines.find(b => b.commodity.name.startsWith(checkerCommodity.name));
-    const currentBaseline = liveData ? liveData.price : checkerCommodity.baseline;
-    
     // Use API variance if available, else fallback
-    const variancePct = varianceData?.variancePercentage ?? (((quoted - currentBaseline) / currentBaseline) * 100);
-    const cheapest = checkerCommodity.sources[0];
+    const variancePct = varianceData?.variancePercentage ?? (((quoted - checkerCommodity.baseline) / checkerCommodity.baseline) * 100);
 
     return (
       <div>
+        <QuoteCheckerWalkthrough />
         <PageHeader title={t.checker.resultTitle} subtitle={`${lang === 'tl' ? checkerCommodity.tagalog : checkerCommodity.name} · ${checkerLocation}`} />
         <div className="px-4 pt-5 space-y-4 pb-6">
           <div className={`rounded-2xl p-5 border-2 ${isFair ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
@@ -108,8 +115,8 @@ export default function CheckerPage() {
           <div className="bg-card rounded-xl border border-border overflow-hidden">
             <div className="px-4 py-3 border-b border-border"><p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">{t.checker.priceBreakdown}</p></div>
             {[
-              { label:t.checker.quotedPrice,      value:`₱${quoted}/kg`,          highlight:!isFair },
-              { label:t.checker.currentBaseline, value:`₱${currentBaseline}/kg`,   highlight:false },
+              { label:t.checker.quotedPrice,      value:`₱${quoted.toFixed(2)}/kg`,          highlight:!isFair },
+              { label:t.checker.currentBaseline, value:`₱${checkerCommodity.baseline.toFixed(2)}/kg`,   highlight:false },
               { label:t.checker.difference,            value:`${variancePct>0?"+":""}${variancePct.toFixed(1)}%`, highlight:!isFair },
             ].map(({ label, value, highlight }) => (
               <div key={label} className="flex items-center justify-between px-4 py-3 border-b border-border last:border-0">
@@ -119,19 +126,22 @@ export default function CheckerPage() {
             ))}
           </div>
 
-          {!isFair && (
+          {!isFair && peerData && peerData.averagePeerPrice && (
             <div className="bg-card rounded-xl border border-border overflow-hidden">
-              <div className="px-4 py-3 border-b border-amber-200 bg-amber-50">
-                <p className="text-xs font-bold text-amber-700 uppercase tracking-wide">{t.checker.cheaperSource}</p>
+              <div className="px-4 py-3 border-b border-blue-200 bg-blue-50 flex items-center gap-2">
+                <Users size={14} className="text-blue-700"/>
+                <p className="text-xs font-bold text-blue-700 uppercase tracking-wide">Community Check</p>
               </div>
               <div className="px-4 py-4">
                 <div className="flex items-center justify-between mb-1">
-                  <p className="font-bold text-foreground">{cheapest.name}</p>
-                  <p className="text-lg font-extrabold text-green-700">₱{cheapest.price}/kg</p>
+                  <p className="font-bold text-foreground">Average Peer Price</p>
+                  <p className="text-lg font-extrabold text-blue-700">₱{peerData.averagePeerPrice}/kg</p>
                 </div>
-
-                <div className="mt-3 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-                  <p className="text-xs font-semibold text-green-700">{t.checker.saveMoney.replace('{amt}', (quoted - cheapest.price).toFixed(0))}</p>
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Based on {peerData.recentReports.length} recent reports from vendors in {checkerLocation}.
+                </div>
+                <div className="mt-3 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
+                  <p className="text-xs font-semibold text-blue-700">You could save ₱{(quoted - peerData.averagePeerPrice).toFixed(0)} if you match the peer average.</p>
                 </div>
               </div>
             </div>
@@ -139,14 +149,13 @@ export default function CheckerPage() {
 
           <div className="dashboard-updated flex items-center gap-2 bg-card rounded-xl px-4 py-3 border border-border">
             <Shield size={14} className="text-primary shrink-0"/>
-            <p className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{t.checker.source}: </span>DA Bulletin, Jul 10, 2026 · Metro Manila</p>
+            <p className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{t.checker.source}: </span>DA Bulletin, {new Date().toLocaleDateString()} · {checkerLocation || "Metro Manila"}</p>
           </div>
 
-          {!isFair && (
-            <button onClick={() => router.push("/advisor?id=" + checkerCommodity.id + "&quote=" + quotedPrice)} className="w-full bg-primary text-white font-bold text-sm py-4 rounded-full flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
-              <Navigation size={16}/>{t.checker.viewActionBtn}
-            </button>
-          )}
+          <button onClick={() => router.push("/advisor?id=" + checkerCommodity.id + "&quote=" + quotedPrice)} className="w-full bg-primary text-white font-bold text-sm py-4 rounded-full flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
+            <Navigation size={16}/>{t.checker.viewActionBtn}
+          </button>
+          
           <button onClick={onReset} className="w-full bg-card border border-border text-foreground font-semibold text-sm py-4 rounded-full active:bg-muted transition-colors">{t.checker.checkAgainBtn}</button>
         </div>
       </div>
@@ -155,15 +164,13 @@ export default function CheckerPage() {
 
   return (
     <div>
+      <QuoteCheckerWalkthrough />
       <PageHeader title={t.checker.title} subtitle={t.checker.subtitle} onBack={() => router.push("/")} />
       <div className="px-4 pt-5 space-y-5 pb-6">
         <div>
           <SL>{t.checker.selectCommodity}</SL>
           <div className="commodity-picker-grid">
-            {COMMODITIES.map((c) => {
-              const liveData = liveBaselines.find(b => b.commodity.name.startsWith(c.name));
-              const currentBaseline = liveData ? liveData.price : c.baseline;
-              
+            {dynamicCommodities.map((c: any) => {
               return (
                 <button key={c.id} onClick={() => setCheckerCommodity(c)}
                   className={`w-full flex items-center gap-3 rounded-xl px-4 py-3 border transition-all active:scale-[0.99] text-left ${
@@ -172,7 +179,7 @@ export default function CheckerPage() {
                   <CommodityImage commodity={c} size="md"/>
                   <div className="flex-1">
                     <p className="font-semibold text-sm leading-tight">{lang === 'tl' ? c.tagalog : c.name}</p>
-                    <p className={`text-xs ${checkerCommodity?.id === c.id ? "text-white/70" : "text-muted-foreground"}`}>{t.checker.baseline}: ₱{currentBaseline}/kg</p>
+                    <p className={`text-xs ${checkerCommodity?.id === c.id ? "text-white/70" : "text-muted-foreground"}`}>{t.checker.baseline}: ₱{c.baseline}/kg</p>
                   </div>
                   {checkerCommodity?.id === c.id && <Check size={16} className="text-white shrink-0"/>}
                 </button>
@@ -191,15 +198,13 @@ export default function CheckerPage() {
                 setQuotedPrice(val);
               }
             }} placeholder="0.00"
-              className="w-full bg-card border border-border rounded-xl pl-9 pr-4 py-4 text-xl font-bold text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"/>
+            className="w-full bg-card border border-border rounded-xl pl-9 pr-4 py-4 text-xl font-bold text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"/>
           </div>
           {checkerCommodity && quotedPrice && (() => {
-            const liveData = liveBaselines.find(b => b.commodity.name.startsWith(checkerCommodity.name));
-            const currentBaseline = liveData ? liveData.price : checkerCommodity.baseline;
             return (
               <p className="text-xs text-muted-foreground mt-1.5 ml-1">
-                {t.checker.baseline}: ₱{currentBaseline}/kg ·{" "}
-                {parseFloat(quotedPrice) > currentBaseline * 1.15
+                {t.checker.baseline}: ₱{checkerCommodity.baseline}/kg ·{" "}
+                {parseFloat(quotedPrice) > checkerCommodity.baseline * 1.15
                   ? <span className="text-red-600 font-semibold">{t.checker.higherThanBaseline}</span>
                   : <span className="text-green-700 font-semibold">{t.checker.withinRange}</span>}
               </p>

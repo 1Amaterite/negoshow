@@ -36,26 +36,59 @@ async function main() {
     });
     console.log(`Upserted Commodity: ${commodity.name}`);
 
-    // Create a dummy RetailPrice (Baseline) for each commodity
+    // Create 30 days of historical data for charts
     const basePrices: Record<string, number> = {
-      'Red Onions': 150,
-      'White Onions': 140,
-      'Garlic': 300,
-      'Ginger': 200,
-      'Potatoes': 120,
+      'Red Onions': 140,
+      'White Onions': 95,
+      'Garlic': 220,
+      'Ginger': 180,
+      'Potatoes': 65,
     };
 
-    await prisma.retailPrice.create({
-      data: {
-        commodityId: commodity.id,
-        marketId: pasayMarket.id,
-        price: basePrices[commodity.name],
-        observedDate: new Date(),
-        isVerified: true,
-      },
-    });
-    console.log(`Created baseline price for ${commodity.name}`);
+    const volatility = (Math.random() * 10) - 5;
+    
+    for (let i = 30; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      
+      const fluctuation = Math.floor(Math.random() * 15) - 7;
+      const price = basePrices[commodity.name] + fluctuation + volatility;
+
+      await prisma.retailPrice.create({
+        data: {
+          commodityId: commodity.id,
+          marketId: pasayMarket.id,
+          price: price > 0 ? price : 50,
+          observedDate: d,
+          isVerified: true,
+        },
+      });
+    }
+    console.log(`Created 30 days of baseline prices for ${commodity.name}`);
+
+    // Mock vendor checks (Peer prices)
+    for (let i = 0; i < 5; i++) {
+      const vPrice = basePrices[commodity.name] + (Math.random() * 20 - 5);
+      await prisma.vendorCheck.create({
+        data: {
+          commodityId: commodity.id,
+          marketId: pasayMarket.id,
+          checkedPrice: vPrice > 0 ? vPrice : 50,
+          checkedAt: new Date(),
+          isFlagged: false
+        }
+      });
+    }
   }
+
+  // Create Bulletin Records
+  await prisma.bulletinRecord.create({
+    data: {
+      fileUrl: "https://example.com/bulletin1.pdf",
+      uploadDate: new Date(),
+      processedStatus: "PROCESSED"
+    }
+  });
 
   const adminPassword = 'admin123';
   const hashedPassword = await bcrypt.hash(adminPassword, 10);
