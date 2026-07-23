@@ -156,7 +156,7 @@ export default function DashboardPage() {
                 <BarChart data={VARIANCE_DATA} barCategoryGap="28%" barGap={3}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(114,121,110,0.15)" vertical={false}/>
                   <XAxis dataKey="name" tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false}/>
-                  <YAxis tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false} width={34} tickFormatter={(v)=>`₱${v}`} domain={[0,"auto"]}/>
+                  <YAxis tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false} width={45} tickFormatter={(v: any)=>`₱${new Intl.NumberFormat('en-US').format(v)}`} domain={[0,"auto"]}/>
                   <Tooltip content={<VarTip/>}/>
                   <Bar dataKey="30-Araw na Karaniwan" fill="#c8a97a" radius={[4,4,0,0]}/>
                   <Bar dataKey="Kasalukuyan" radius={[4,4,0,0]}>
@@ -222,7 +222,7 @@ export default function DashboardPage() {
                   <LineChart data={predData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(114,121,110,0.15)"/>
                     <XAxis dataKey="araw" tick={{fontSize:9,fill:"#72796e"}} axisLine={false} tickLine={false}/>
-                    <YAxis tick={{fontSize:9,fill:"#72796e"}} axisLine={false} tickLine={false} width={34} tickFormatter={(v: any)=>`₱${v}`} domain={["auto","auto"]}/>
+                    <YAxis tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false} width={45} tickFormatter={(v: any)=>`₱${new Intl.NumberFormat('en-US').format(v)}`} domain={["auto","auto"]}/>
                     <Tooltip content={<PredTip/>}/>
                     <ReferenceLine x="Jul 10" stroke="rgba(114,121,110,0.4)" strokeDasharray="4 4" label={{value:"Ngayon",position:"top",fontSize:9,fill:"#72796e"}}/>
                     <Line type="monotone" dataKey="aktwal" name="Aktwal na Presyo" stroke="#154212" strokeWidth={2.5} dot={{fill:"#154212",r:3}} connectNulls={false}/>

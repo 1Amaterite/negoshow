@@ -3,7 +3,8 @@
 import { Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Navigation, Shield } from "lucide-react";
-import { COMMODITIES, VENDOR_TIPS } from "@/lib/data";
+import { useQuery } from "@tanstack/react-query";
+import { VENDOR_TIPS } from "@/lib/constants";
 import { PageHeader, SL, CommodityImage } from "@/components/ui";
 import { useTranslation } from "@/context/LanguageContext";
 
@@ -15,8 +16,18 @@ function AdvisorContent() {
   const id = searchParams.get("id");
   const quote = searchParams.get("quote");
 
-  const commodity = COMMODITIES.find((c) => c.id === id) || COMMODITIES[0];
+  const { data: dynamicCommodities = [], isLoading } = useQuery({
+    queryKey: ['commodities'],
+    queryFn: async () => {
+      const res = await fetch('/api/commodities');
+      return await res.json();
+    }
+  });
+
+  const commodity = dynamicCommodities.find((c: any) => c.id === id) || dynamicCommodities[0];
   const quotedPrice = quote ? parseFloat(quote) : 0;
+
+  if (isLoading || !commodity) return <div className="p-8 text-center text-muted-foreground text-sm">{t.advisor.loading}</div>;
 
   const cheapest = commodity.sources[0];
   const isFlagged = quotedPrice > 0 && quotedPrice > commodity.baseline * 1.15;

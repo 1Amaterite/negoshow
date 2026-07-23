@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { use } from "react";
 import { Navigation } from "lucide-react";
-import { COMMODITIES } from "@/lib/data";
+import { useQuery } from "@tanstack/react-query";
 import { PageHeader, SL, TrendBadge, KalagayanChip } from "@/components/ui";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "@/components/Charts";
 import { useTranslation } from "@/context/LanguageContext";
@@ -25,9 +25,19 @@ export default function CommodityPage({ params }: { params: Promise<{ id: string
   const router = useRouter();
   const { id } = use(params);
   const { t, lang } = useTranslation();
-  const commodity = COMMODITIES.find((c) => c.id === id) || COMMODITIES[0];
-  
+  const { data: dynamicCommodities = [], isLoading } = useQuery({
+    queryKey: ['commodities'],
+    queryFn: async () => {
+      const res = await fetch('/api/commodities');
+      return await res.json();
+    }
+  });
+
+  const commodity = dynamicCommodities.find((c: any) => c.id === id) || dynamicCommodities[0];
+
   const [range, setRange] = useState<"7d"|"30d">("7d");
+
+  if (isLoading || !commodity) return <div className="p-8 text-center text-muted-foreground text-sm">Loading...</div>;
 
   return (
     <div>
@@ -57,7 +67,7 @@ export default function CommodityPage({ params }: { params: Promise<{ id: string
               <LineChart data={gen7Day(commodity.baseline,commodity.trend)}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(114,121,110,0.15)"/>
                 <XAxis dataKey="day" tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false}/>
-                <YAxis tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false} width={36} tickFormatter={(v: any)=>`₱${v}`} domain={["auto","auto"]}/>
+                <YAxis tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false} width={45} tickFormatter={(v: any)=>`₱${new Intl.NumberFormat('en-US').format(v)}`} domain={["auto","auto"]}/>
                 <Tooltip contentStyle={{background:"#fcf9f8",border:"1px solid rgba(114,121,110,0.22)",borderRadius:8,fontSize:12}} formatter={(v:number)=>[`₱${v}/kg`,t.commodity.price]}/>
                 <Line type="monotone" dataKey="presyo" stroke="#154212" strokeWidth={2.5} dot={{fill:"#154212",r:3}}/>
               </LineChart>
@@ -67,7 +77,7 @@ export default function CommodityPage({ params }: { params: Promise<{ id: string
         <div>
           <SL>{t.commodity.marketPrices}</SL>
           <div className="space-y-2">
-            {commodity.sources.map((src,i)=>(
+            {commodity.sources.map((src: any, i: number)=>(
               <div key={src.name} className={`flex items-center justify-between bg-card rounded-xl px-4 py-3 border ${i===0?"border-green-200 bg-green-50":"border-border"}`}>
                 <div className="flex items-center gap-2">
                   {i===0 && <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">{t.commodity.cheapest}</span>}

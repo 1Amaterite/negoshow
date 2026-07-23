@@ -15,19 +15,3 @@ export interface Commodity {
   sources: { name: string; price: number; distance: string }[];
 }
 
-export interface BulletinRecord {
-  id: number; source: string; date: string; location: string;
-  commodities: string[]; type: "PDF" | "Image"; verified: boolean;
-}
-
-export interface AdminRecord {
-  id: number; commodity: string; price: number; location: string;
-  date: string; source: string; status: "pending" | "approved" | "rejected";
-  flagged?: boolean; flagReason?: string;
-}
-
-export interface UploadedDoc {
-  id: number; filename: string; sourceOffice: string; bulletinDate: string;
-  coverage: string; docType: "PDF" | "Image"; commodities: string[];
-  status: DocKalagayan; uploadedAt: string;
-}

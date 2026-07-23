@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Navigation, Clock, ChevronRight } from "lucide-react";
-import { COMMODITIES, VENDOR_TIPS } from "@/lib/data";
+import { useQuery } from "@tanstack/react-query";
+import { VENDOR_TIPS } from "@/lib/constants";
 import { CommodityImage } from "@/components/ui";
 import { useTranslation } from "@/context/LanguageContext";
 
@@ -11,10 +12,20 @@ export default function ProcurementPage() {
   const router = useRouter();
   const { t, lang } = useTranslation();
   const [tab, setTab] = useState<"overview"|"prices"|"recommendations">("overview");
-  
-  const totalSavings = COMMODITIES.reduce((sum,c)=>sum + Math.max(0,c.baseline-c.sources[0].price)*10,0);
-  const buyNow = COMMODITIES.filter(c=>c.trend!=="up").length;
-  const markets = new Set(COMMODITIES.flatMap(c=>c.sources.map(s=>s.name))).size;
+
+  const { data: dynamicCommodities = [], isLoading } = useQuery({
+    queryKey: ['commodities'],
+    queryFn: async () => {
+      const res = await fetch('/api/commodities');
+      return await res.json();
+    }
+  });
+
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading procurement data...</div>;
+
+  const totalSavings = dynamicCommodities.reduce((sum: number,c: any)=>sum + Math.max(0,c.baseline-c.sources[0].price)*10,0);
+  const buyNow = dynamicCommodities.filter((c: any)=>c.trend!=="up").length;
+  const markets = new Set(dynamicCommodities.flatMap((c: any)=>c.sources.map((s: any)=>s.name))).size;
 
   const onOpenAdvisor = (c: any) => {
     router.push(`/advisor?id=${c.id}`);
@@ -44,14 +55,14 @@ export default function ProcurementPage() {
             <div><span>{t.procurement.kpis.savings}</span><strong>₱{totalSavings.toLocaleString()}</strong><small>{t.procurement.kpis.savingsDesc}</small></div>
             <div><span>{t.procurement.kpis.buyNow}</span><strong>{buyNow}</strong><small>{t.procurement.kpis.buyNowDesc}</small></div>
             <div><span>{t.procurement.kpis.markets}</span><strong>{markets}</strong><small>{t.procurement.kpis.marketsDesc}</small></div>
-            <div><span>{t.procurement.kpis.volatile}</span><strong>{COMMODITIES.filter(c=>c.volatility==="High").length}</strong><small>{t.procurement.kpis.volatileDesc}</small></div>
+            <div><span>{t.procurement.kpis.volatile}</span><strong>{dynamicCommodities.filter((c: any)=>c.volatility==="High").length}</strong><small>{t.procurement.kpis.volatileDesc}</small></div>
           </div>
 
           <div className="procurement-grid">
             <section className="procurement-panel procurement-main-panel">
               <div className="panel-heading"><div><h2>{t.procurement.todayPlan.title}</h2><p>{t.procurement.todayPlan.subtitle}</p></div></div>
               <div className="recommendation-list">
-                {COMMODITIES.map(c=>{
+                {dynamicCommodities.map((c: any)=>{
                   const rising=c.trend==="up";
                   const action=rising?t.procurement.todayPlan.wait:t.procurement.todayPlan.buy;
                   return <button key={c.id} onClick={()=>onOpenAdvisor(c)} className="recommendation-row">
@@ -75,12 +86,12 @@ export default function ProcurementPage() {
         {tab==="prices" && <section className="procurement-panel">
           <div className="panel-heading"><div><h2>{t.procurement.priceComparison.title}</h2><p>{t.procurement.priceComparison.subtitle}</p></div></div>
           <div className="price-table-wrap"><table className="price-table"><thead><tr><th>{t.procurement.priceComparison.commodity}</th><th>{t.procurement.priceComparison.currentBaseline}</th><th>{t.procurement.priceComparison.lowestOffer}</th><th>{t.procurement.priceComparison.avg30Day}</th><th>{t.procurement.priceComparison.difference}</th><th>{t.procurement.priceComparison.market}</th></tr></thead><tbody>
-            {COMMODITIES.map(c=><tr key={c.id}><td><CommodityImage commodity={c} size="sm"/><strong>{lang === 'tl' ? c.tagalog : c.name}</strong></td><td>₱{c.baseline}/kg</td><td className="price-good">₱{c.sources[0].price}/kg</td><td>₱{c.baseline30d}/kg</td><td className={c.sources[0].price<c.baseline?"price-good":""}>{t.procurement.priceComparison.lower.replace('{{amt}}', Math.abs(c.baseline-c.sources[0].price).toString())}</td><td>{c.sources[0].name}<small>{c.sources[0].distance}</small></td></tr>)}
+            {dynamicCommodities.map((c: any)=><tr key={c.id}><td><CommodityImage commodity={c} size="sm"/><strong>{lang === 'tl' ? c.tagalog : c.name}</strong></td><td>₱{c.baseline}/kg</td><td className="price-good">₱{c.sources[0].price}/kg</td><td>₱{c.baseline30d}/kg</td><td className={c.sources[0].price<c.baseline?"price-good":""}>{t.procurement.priceComparison.lower.replace('{{amt}}', Math.abs(c.baseline-c.sources[0].price).toString())}</td><td>{c.sources[0].name}<small>{c.sources[0].distance}</small></td></tr>)}
           </tbody></table></div>
         </section>}
 
         {tab==="recommendations" && <div className="recommendation-cards">
-          {COMMODITIES.map(c=>{ const rising=c.trend==="up"; return <article key={c.id} className="procurement-panel recommendation-card">
+          {dynamicCommodities.map((c: any)=>{ const rising=c.trend==="up"; return <article key={c.id} className="procurement-panel recommendation-card">
             <div className="recommendation-card-top"><CommodityImage commodity={c} size="lg" className="commodity-photo"/><div><h2>{lang === 'tl' ? c.tagalog : c.name}</h2><p>{c.name}</p></div><div className={`action-pill ${rising?"wait":"buy"}`}>{rising?t.procurement.todayPlan.wait:t.procurement.todayPlan.buy}</div></div>
             <p className="recommendation-reason">{rising?t.procurement.recommendationCard.waitReason.replace('{{change}}', c.change.toString()):t.procurement.recommendationCard.buyReason.replace('{{trend}}', c.trend==="down"?t.procurement.recommendationCard.down:t.procurement.recommendationCard.stable)}</p>
             <div className="recommendation-metrics"><div><small>{t.procurement.recommendationCard.cheapestSource}</small><strong>{c.sources[0].name}</strong></div><div><small>{t.procurement.recommendationCard.lowestPrice}</small><strong className="price-good">₱{c.sources[0].price}/kg</strong></div><div><small>{t.procurement.recommendationCard.potentialSavings}</small><strong>₱{Math.max(0,(c.baseline-c.sources[0].price)*10)}</strong></div></div>
