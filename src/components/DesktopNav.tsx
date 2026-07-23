@@ -2,16 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useTranslation } from "@/context/LanguageContext";
+import { LanguageToggle } from "./LanguageToggle";
 
 export function DesktopNav() {
   const pathname = usePathname();
+  const { t } = useTranslation();
   
   const links = [
-    { id: "home", label: "Tahanan", href: "/" },
-    { id: "checker", label: "Suriin ang Presyo", href: "/checker" },
-    { id: "trends", label: "Pagsusuri ng Merkado", href: "/dashboard" },
-    { id: "procurement", label: "Pagbili", href: "/procurement" },
-    { id: "more", label: "Mga Sanggunian", href: "/more" },
+    { id: "home", label: t.nav.home, href: "/" },
+    { id: "checker", label: t.nav.checker, href: "/checker" },
+    { id: "trends", label: t.nav.trends, href: "/dashboard" },
+    { id: "procurement", label: t.nav.procurement, href: "/procurement" },
+    { id: "more", label: t.nav.more, href: "/more" },
   ];
 
   return (
@@ -33,7 +36,9 @@ export function DesktopNav() {
             </Link>
           ))}
         </nav>
-        <div className="w-10" aria-hidden="true" />
+        <div className="flex items-center gap-4">
+          <LanguageToggle />
+        </div>
       </div>
     </header>
   );

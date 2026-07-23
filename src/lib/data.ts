@@ -4,7 +4,7 @@ export const COMMODITIES: Commodity[] = [
   {
     id: "red-onion", name: "Red Onion", tagalog: "Sibuyas Pula", shortLabel: "S. Pula", image: "/images/commodities/red-onion.webp",
     baseline: 140, baseline30d: 118, trend: "up", change: 6, changeAbs: 8,
-    volatility: "Mataas", primarySource: "Divisoria Market",
+    volatility: "High", primarySource: "Divisoria Market",
     sources: [
       { name: "Divisoria Market", price: 132, distance: "2.1 km" },
       { name: "Guadalupe Market", price: 136, distance: "1.4 km" },
@@ -14,7 +14,7 @@ export const COMMODITIES: Commodity[] = [
   {
     id: "white-onion", name: "White Onion", tagalog: "Sibuyas Puti", shortLabel: "S. Puti", image: "/images/commodities/white-onion.webp",
     baseline: 95, baseline30d: 98, trend: "stable", change: -2, changeAbs: -2,
-    volatility: "Mababa", primarySource: "Cartimar Market",
+    volatility: "Low", primarySource: "Cartimar Market",
     sources: [
       { name: "Cartimar Market",  price: 90, distance: "0.3 km" },
       { name: "Pasay Central",    price: 93, distance: "0.8 km" },
@@ -24,7 +24,7 @@ export const COMMODITIES: Commodity[] = [
   {
     id: "garlic", name: "Garlic", tagalog: "Bawang", shortLabel: "Bawang", image: "/images/commodities/garlic.webp",
     baseline: 220, baseline30d: 242, trend: "down", change: -6, changeAbs: -14,
-    volatility: "Katamtaman", primarySource: "Divisoria Market",
+    volatility: "Medium", primarySource: "Divisoria Market",
     sources: [
       { name: "Divisoria Market", price: 208, distance: "2.1 km" },
       { name: "Baclaran Market",  price: 214, distance: "1.9 km" },
@@ -34,7 +34,7 @@ export const COMMODITIES: Commodity[] = [
   {
     id: "ginger", name: "Ginger", tagalog: "Luya", shortLabel: "Luya", image: "/images/commodities/ginger.webp",
     baseline: 180, baseline30d: 155, trend: "up", change: 7, changeAbs: 12,
-    volatility: "Mataas", primarySource: "Guadalupe Market",
+    volatility: "High", primarySource: "Guadalupe Market",
     sources: [
       { name: "Guadalupe Market", price: 170, distance: "1.4 km" },
       { name: "Pasay Central",    price: 175, distance: "0.8 km" },
@@ -44,7 +44,7 @@ export const COMMODITIES: Commodity[] = [
   {
     id: "potato", name: "Potato", tagalog: "Patatas", shortLabel: "Patatas", image: "/images/commodities/potato.webp",
     baseline: 65, baseline30d: 63, trend: "stable", change: 2, changeAbs: 1,
-    volatility: "Mababa", primarySource: "Cartimar Market",
+    volatility: "Low", primarySource: "Cartimar Market",
     sources: [
       { name: "Cartimar Market",  price: 62, distance: "0.3 km" },
       { name: "Divisoria Market", price: 63, distance: "2.1 km" },
@@ -128,10 +128,10 @@ export const PREDICTION_DATA: Record<string, { araw: string; aktwal: number | nu
 };
 
 export const VENDOR_TIPS = [
-  { icon: "🛒", title: "Bumili ng mas maaga", body: "Para sa Sibuyas Pula at Luya, bumili bago mag-Huwebes. Inaasahang tataas ang presyo ng hanggang 13% sa susunod na 3 araw." },
-  { icon: "📍", title: "Mas mura sa Divisoria", body: "Ang Sibuyas Pula at Bawang ay may pinakamababang presyo sa Divisoria Market — ₱8–12/kg na mas mura kaysa sa lokal na talipapa." },
-  { icon: "🤝", title: "I-negotiate ang Bawang", body: "Ang kasalukuyang presyo ng Bawang (₱220) ay mas mababa kaysa sa 30-araw na average (₱242). Ito ang tamang oras para makipag-negotiate." },
-  { icon: "⏳", title: "Huwag magmadali sa Patatas", body: "Stable ang Patatas. Walang pangangailangan na mag-stock ng malaki — mananatiling matatag ang presyo sa susunod na linggo." },
+  { icon: "🛒", title: "Bumili ng mas maaga", titleEn: "Buy Early", body: "Para sa Sibuyas Pula at Luya, bumili bago mag-Huwebes. Inaasahang tataas ang presyo ng hanggang 13% sa susunod na 3 araw.", bodyEn: "For Red Onion and Ginger, buy before Thursday. Prices are expected to rise up to 13% in the next 3 days." },
+  { icon: "📍", title: "Mas mura sa Divisoria", titleEn: "Cheaper in Divisoria", body: "Ang Sibuyas Pula at Bawang ay may pinakamababang presyo sa Divisoria Market — ₱8–12/kg na mas mura kaysa sa lokal na talipapa.", bodyEn: "Red Onion and Garlic have the lowest prices in Divisoria Market — ₱8–12/kg cheaper than local markets." },
+  { icon: "🤝", title: "I-negotiate ang Bawang", titleEn: "Negotiate Garlic", body: "Ang kasalukuyang presyo ng Bawang (₱220) ay mas mababa kaysa sa 30-araw na average (₱242). Ito ang tamang oras para makipag-negotiate.", bodyEn: "The current price of Garlic (₱220) is lower than the 30-day average (₱242). It is the right time to negotiate." },
+  { icon: "⏳", title: "Huwag magmadali sa Patatas", titleEn: "Don't Rush Potato", body: "Stable ang Patatas. Walang pangangailangan na mag-stock ng malaki — mananatiling matatag ang presyo sa susunod na linggo.", bodyEn: "Potato is stable. No need to stock up heavily — prices will remain stable next week." },
 ];
 
 export const INITIAL_BULLETINS: BulletinRecord[] = [

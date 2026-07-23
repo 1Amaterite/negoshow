@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Shield, Check, Clock } from "lucide-react";
 import { PageHeader } from "@/components/ui";
+import { useTranslation } from "@/context/LanguageContext";
 
 // Mock data (in the original app it was likely in data.ts or a state, but for now we'll inline or fetch)
 const INITIAL_BULLETINS = [
@@ -13,15 +14,16 @@ const INITIAL_BULLETINS = [
 
 export default function TransparencyPage() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   return (
     <div>
-      <PageHeader title="Source Transparency" subtitle="Mga opisyal na bulletin na pinagkukunan" onBack={() => router.push("/")} />
+      <PageHeader title={t.transparency.title} subtitle={t.transparency.subtitle} onBack={() => router.push("/")} />
       <div className="px-4 pt-4 pb-6 space-y-4">
         <div className="bg-card rounded-xl border border-border px-4 py-3 flex items-start gap-3">
           <Shield size={16} className="text-primary mt-0.5 shrink-0"/>
           <p className="text-xs text-muted-foreground leading-relaxed">
-            Lahat ng baseline presyo ay nagmumula sa mga opisyal na DA at LGU price bulletin na na-upload ng admin team at nire-review bago i-publish.
+            {t.transparency.infoText}
           </p>
         </div>
         <div className="space-y-2">
@@ -33,8 +35,8 @@ export default function TransparencyPage() {
                   <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                     <p className="text-sm font-bold text-foreground">{b.source}</p>
                     {b.verified
-                      ? <span className="flex items-center gap-0.5 text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full font-semibold"><Check size={10}/>Beripikado</span>
-                      : <span className="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-semibold">Naghihintay</span>}
+                      ? <span className="flex items-center gap-0.5 text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full font-semibold"><Check size={10}/>{t.transparency.verified}</span>
+                      : <span className="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-semibold">{t.transparency.waiting}</span>}
                   </div>
                   <p className="text-xs text-muted-foreground flex items-center gap-1 mb-1.5"><Clock size={10}/>{b.date} · {b.location}</p>
                   <div className="flex flex-wrap gap-1">

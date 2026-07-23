@@ -3,16 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Search, TrendingUp, Navigation, MoreHorizontal } from "lucide-react";
+import { useTranslation } from "@/context/LanguageContext";
 
 export function BottomNav() {
   const pathname = usePathname();
 
+  const { t } = useTranslation();
+
   const tabs = [
-    { id: "home", label: "Tahanan", icon: Home, href: "/" },
-    { id: "checker", label: "Suriin", icon: Search, href: "/checker" },
-    { id: "trends", label: "Pagsusuri", icon: TrendingUp, href: "/dashboard" },
-    { id: "procurement", label: "Bumili", icon: Navigation, href: "/procurement" },
-    { id: "more", label: "Dagdag", icon: MoreHorizontal, href: "/more" },
+    { id: "home", label: t.nav.home, icon: Home, href: "/" },
+    { id: "checker", label: t.nav.checker, icon: Search, href: "/checker" },
+    { id: "trends", label: t.nav.trends, icon: TrendingUp, href: "/dashboard" },
+    { id: "procurement", label: t.nav.procurement, icon: Navigation, href: "/procurement" },
+    { id: "more", label: t.nav.more, icon: MoreHorizontal, href: "/more" },
   ];
 
   if (pathname?.startsWith("/admin")) return null;

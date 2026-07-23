@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { LogOut, Upload, Database, CheckCircle, FilePlus, Check, MapPin, ChevronDown, RefreshCw, Clock, Trash2, Info, AlertTriangle, X } from "lucide-react";
 import { PageHeader, SL } from "@/components/ui";
 import { useGlobal } from "@/lib/GlobalContext";
+import { useTranslation } from "@/context/LanguageContext";
 
 type AdminTab = "upload" | "validate";
 type DocStatus = "processing" | "validated" | "published";
@@ -55,6 +56,7 @@ const DOC_STATUS: Record<DocStatus, { label: string; cls: string }> = {
 export default function AdminPage() {
   const router = useRouter();
   const { isAdmin, logout } = useGlobal();
+  const { t, lang } = useTranslation();
   const [tab, setTab] = useState<AdminTab>("upload");
   const [records, setRecords] = useState<any[]>([]);
   const [done, setDone] = useState<any[]>([]); // To hold approved/rejected logs if desired
@@ -236,7 +238,7 @@ export default function AdminPage() {
           {uploadSuccess && (
             <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
               <CheckCircle size={15} className="text-green-600 shrink-0"/>
-              <p className="text-xs text-green-800 font-semibold">Na-upload na ang dokumento. Naka-queue para sa validation.</p>
+              <p className="text-xs text-green-800 font-semibold">{t.admin.upload.success}</p>
             </div>
           )}
 
@@ -244,13 +246,13 @@ export default function AdminPage() {
           <div className="bg-card rounded-xl border border-border overflow-hidden">
             <div className="px-4 py-3 border-b border-border flex items-center gap-2">
               <FilePlus size={14} className="text-primary"/>
-              <p className="text-sm font-bold text-foreground">Mag-upload ng Bagong Bulletin</p>
+              <p className="text-sm font-bold text-foreground">{t.admin.upload.title}</p>
             </div>
             <div className="px-4 py-4 space-y-4">
 
               {/* File */}
               <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">Dokumento</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">{t.admin.upload.file}</label>
                 <input ref={fileRef} type="file" accept=".pdf,image/*" className="hidden"
                   onChange={(e)=>setSelectedFile(e.target.files?.[0] || null)}/>
                 <button onClick={()=>fileRef.current?.click()}
@@ -261,7 +263,7 @@ export default function AdminPage() {
                   <div className="flex-1 text-left min-w-0">
                     {selectedFile
                       ? <p className="text-sm font-semibold text-primary truncate">{selectedFile.name}</p>
-                      : <><p className="text-sm font-semibold text-muted-foreground">Pumili ng PDF o Image file</p><p className="text-xs text-muted-foreground">Mag-tap para mag-browse</p></>}
+                      : <><p className="text-sm font-semibold text-muted-foreground">{t.admin.upload.uploadFile}</p><p className="text-xs text-muted-foreground">{t.admin.upload.fileHelp}</p></>}
                   </div>
                   {selectedFile && <Check size={16} className="text-primary shrink-0"/>}
                 </button>
@@ -269,18 +271,18 @@ export default function AdminPage() {
 
               {/* Doc type */}
               <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">Uri ng Dokumento</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">{t.admin.upload.docType}</label>
                 <div className="flex bg-muted rounded-full overflow-hidden w-fit">
-                  {(["PDF","Image"] as const).map((t)=>(
-                    <button key={t} onClick={()=>setDocType(t)}
-                      className={`px-4 py-1.5 text-xs font-bold transition-colors ${docType===t?"bg-primary text-white":"text-muted-foreground"}`}>{t}</button>
+                  {(["PDF","Image"] as const).map((docT)=>(
+                    <button key={docT} onClick={()=>setDocType(docT)}
+                      className={`px-4 py-1.5 text-xs font-bold transition-colors ${docType===docT?"bg-primary text-white":"text-muted-foreground"}`}>{docT==="PDF"?t.admin.upload.pdf:t.admin.upload.image}</button>
                   ))}
                 </div>
               </div>
 
               {/* Source office */}
               <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">Source Office</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">{t.admin.upload.sourceOffice}</label>
                 <input type="text" value={sourceOffice} onChange={(e)=>setSourceOffice(e.target.value)}
                   placeholder="e.g. DA – Region IV-A, LGU Pasay City"
                   className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"/>
@@ -288,18 +290,18 @@ export default function AdminPage() {
 
               {/* Date */}
               <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">Petsa ng Bulletin</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">{t.admin.upload.bulletinDate}</label>
                 <input type="date" value={bulletinDate} onChange={(e)=>setBulletinDate(e.target.value)}
                   className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"/>
               </div>
 
               {/* Coverage */}
               <div className="relative">
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">Coverage Area</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">{t.admin.upload.coverage}</label>
                 <button onClick={()=>setCoverageOpen(!coverageOpen)}
                   className="w-full flex items-center gap-2 bg-background border border-border rounded-xl px-4 py-3 text-left">
                   <MapPin size={14} className="text-muted-foreground shrink-0"/>
-                  <span className={`flex-1 text-sm ${coverage?"text-foreground font-medium":"text-muted-foreground/60"}`}>{coverage||"Piliin ang lugar na covered…"}</span>
+                  <span className={`flex-1 text-sm ${coverage?"text-foreground font-medium":"text-muted-foreground/60"}`}>{coverage||"Select..."}</span>
                   <ChevronDown size={14} className={`text-muted-foreground transition-transform ${coverageOpen?"rotate-180":""}`}/>
                 </button>
                 {coverageOpen && (
@@ -314,7 +316,7 @@ export default function AdminPage() {
 
               {/* Commodities */}
               <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">Mga Kalakal na Nakalagay</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">{t.admin.upload.commodities}</label>
                 <div className="flex flex-wrap gap-2">
                   {COMMODITY_NAMES.map((name)=>{
                     const active = selectedComms.includes(name);
@@ -332,14 +334,14 @@ export default function AdminPage() {
 
               <button onClick={handleUpload} disabled={!canUpload||uploading}
                 className="w-full bg-primary text-white font-bold text-sm py-3.5 rounded-full flex items-center justify-center gap-2 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none">
-                {uploading?<><RefreshCw size={14} className="animate-spin"/>Ina-upload…</>:<><Upload size={14}/>I-upload ang Bulletin</>}
+                {uploading?<><RefreshCw size={14} className="animate-spin"/>{t.admin.upload.uploading}</>:<><Upload size={14}/>{t.admin.upload.uploadBtn}</>}
               </button>
             </div>
           </div>
 
           {/* Uploads log */}
           <div>
-            <SL>Mga Na-upload na Dokumento</SL>
+            <SL>{t.admin.upload.docsTitle}</SL>
             <div className="space-y-2">
               {uploads.map((doc)=>{
                 const s = DOC_STATUS[doc.status];
@@ -350,7 +352,7 @@ export default function AdminPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <p className="text-xs font-bold text-foreground truncate flex-1">{doc.filename}</p>
-                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${s.cls}`}>{s.label}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${s.cls}`}>{t.admin.upload.docStatus[doc.status]}</span>
                         </div>
                         <p className="text-[10px] text-muted-foreground mt-0.5">{doc.sourceOffice} · {doc.coverage}</p>
                         <p className="text-[10px] text-muted-foreground flex items-center gap-1"><Clock size={9}/>{doc.uploadedAt}</p>
@@ -364,12 +366,12 @@ export default function AdminPage() {
                         {doc.status==="validated" && (
                           <button onClick={()=>publishDoc(doc.id)}
                             className="flex-1 flex items-center justify-center gap-1 bg-primary text-white text-xs font-bold py-2 rounded-lg active:scale-[0.97] transition-all">
-                            <Check size={12}/>I-publish
+                            <Check size={12}/>{t.admin.upload.publish}
                           </button>
                         )}
                         <button onClick={()=>deleteDoc(doc.id)}
                           className="flex items-center justify-center gap-1 bg-card border border-red-200 text-red-600 text-xs font-bold px-3 py-2 rounded-lg active:scale-[0.97] transition-all">
-                          <Trash2 size={12}/>Tanggalin
+                          <Trash2 size={12}/>{t.admin.upload.delete}
                         </button>
                       </div>
                     )}
@@ -386,9 +388,9 @@ export default function AdminPage() {
         <div className="px-4 pt-4 pb-6 space-y-5">
           <div className="grid grid-cols-3 gap-2">
             {[
-              { label:"Naghihintay",  count:pending.length,                              color:"bg-amber-100 text-amber-700" },
-              { label:"Approved", count:done.filter(r=>r.status==="approved").length, color:"bg-green-100 text-green-700" },
-              { label:"Tinanggihan", count:done.filter(r=>r.status==="rejected").length, color:"bg-red-100 text-red-700"   },
+              { label:t.admin.validate.pending,  count:pending.length,                              color:"bg-amber-100 text-amber-700" },
+              { label:t.admin.validate.approved, count:done.filter(r=>r.status==="approved").length, color:"bg-green-100 text-green-700" },
+              { label:t.admin.validate.rejected, count:done.filter(r=>r.status==="rejected").length, color:"bg-red-100 text-red-700"   },
             ].map(({label,count,color})=>(
               <div key={label} className={`rounded-xl px-3 py-3 text-center border ${color}`}>
                 <p className="text-2xl font-extrabold">{count}</p>
@@ -400,20 +402,20 @@ export default function AdminPage() {
           <div className="bg-card rounded-xl border border-border px-4 py-3 flex items-start gap-2">
             <Info size={13} className="text-primary mt-0.5 shrink-0"/>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Ang mga record na ito ay na-extract mula sa mga na-upload na bulletin. I-review bago i-approve para ma-publish sa vendor-facing na dashboard.
+              {t.admin.validate.info}
             </p>
           </div>
 
           {pending.length > 0 && (
             <div>
-              <SL>Para sa Review</SL>
+              <SL>{t.admin.validate.forReview}</SL>
               <div className="space-y-2">
                 {pending.map((r)=>(
                   <div key={r.id} className={`bg-card rounded-xl border overflow-hidden ${r.isProxy?"border-blue-300":"border-border"}`}>
                     {r.isProxy && (
                       <div className="flex items-center gap-2 px-4 py-2 bg-blue-100 border-b border-blue-200">
                         <AlertTriangle size={13} className="text-blue-600"/>
-                        <p className="text-xs font-semibold text-blue-700">Generated Proxy Baseline</p>
+                        <p className="text-xs font-semibold text-blue-700">{t.admin.validate.proxyBaseline}</p>
                       </div>
                     )}
                     <div className="px-4 py-3">
@@ -427,11 +429,11 @@ export default function AdminPage() {
                       <div className="flex gap-2">
                         <button onClick={()=>updateRec(r.id,"approved")}
                           className="flex-1 flex items-center justify-center gap-1 bg-primary text-white text-xs font-bold py-2.5 rounded-lg active:scale-[0.97] transition-all">
-                          <Check size={13}/>I-approve
+                          <Check size={13}/>{t.admin.validate.approve}
                         </button>
                         <button onClick={()=>updateRec(r.id,"rejected")}
                           className="flex-1 flex items-center justify-center gap-1 bg-card border border-red-200 text-red-600 text-xs font-bold py-2.5 rounded-lg active:scale-[0.97] transition-all">
-                          <X size={13}/>I-reject
+                          <X size={13}/>{t.admin.validate.reject}
                         </button>
                       </div>
                     </div>
@@ -443,7 +445,7 @@ export default function AdminPage() {
 
           {done.length > 0 && (
             <div>
-              <SL>Natapos na (Current Session)</SL>
+              <SL>{t.admin.validate.completed}</SL>
               <div className="space-y-2">
                 {done.map((r)=>(
                   <div key={r.id} className="flex items-center justify-between bg-card rounded-xl px-4 py-3 border border-border">
@@ -452,7 +454,7 @@ export default function AdminPage() {
                       <p className="text-xs text-muted-foreground">{r.market?.name} · {new Date(r.observedDate).toLocaleDateString()}</p>
                     </div>
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${r.status==="approved"?"bg-green-100 text-green-700 border-green-200":"bg-red-100 text-red-700 border-red-200"}`}>
-                      {r.status==="approved"?"Approved":"Tinanggihan"}
+                      {r.status==="approved"?t.admin.validate.statusApproved:t.admin.validate.statusRejected}
                     </span>
                   </div>
                 ))}
