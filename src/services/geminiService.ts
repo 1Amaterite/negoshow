@@ -37,7 +37,7 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
 
     // 2. Call Gemini API
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-1.5-pro',
+      model: 'gemini-pro-latest',
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: {
