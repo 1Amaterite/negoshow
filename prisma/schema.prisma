@@ -54,6 +54,9 @@ model RetailPrice {
   sourceBulletinId Int?
   isProxy          Boolean  @default(false)
   isVerified       Boolean  @default(false)
+  confidenceScore  Float?
+  isFlagged        Boolean  @default(false)
+  flagReason       String?
   createdAt        DateTime @default(now())
 
   commodity      Commodity       @relation(fields: [commodityId], references: [id])

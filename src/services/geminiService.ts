@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { prisma } from './dbService';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -6,6 +6,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 interface ExtractedPrice {
   commodity: string;
   price: number;
+  confidenceScore: number;
 }
 
 interface GeminiExtractionResult {
@@ -36,9 +37,28 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
 
     // 2. Call Gemini API
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-1.5-flash',
+      model: 'gemini-1.5-pro',
       generationConfig: {
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: SchemaType.OBJECT,
+          properties: {
+            bulletinDate: { type: SchemaType.STRING, description: "Formatted as YYYY-MM-DD" },
+            extractedPrices: {
+              type: SchemaType.ARRAY,
+              items: {
+                type: SchemaType.OBJECT,
+                properties: {
+                  commodity: { type: SchemaType.STRING },
+                  price: { type: SchemaType.NUMBER },
+                  confidenceScore: { type: SchemaType.NUMBER, description: "A score from 0 to 100 representing how confident you are in this extracted price based on document legibility" }
+                },
+                required: ["commodity", "price", "confidenceScore"]
+              }
+            }
+          },
+          required: ["bulletinDate", "extractedPrices"]
+        }
       }
     });
     
@@ -76,11 +96,13 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
         "extractedPrices": [
           {
             "commodity": "Red Onions",
-            "price": 107.87
+            "price": 107.87,
+            "confidenceScore": 95
           },
           {
             "commodity": "White Onions",
-            "price": 103.75
+            "price": 103.75,
+            "confidenceScore": 95
           }
         ]
       }
@@ -169,23 +191,35 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
         continue;
       }
 
-      // Check for 100% price jump/drop vs latest verified baseline
+      // Check for 20% price jump/drop vs latest verified baseline
       const latestPriceRecord = await prisma.retailPrice.findFirst({
         where: { commodityId: commodity.id, isVerified: true },
         orderBy: { observedDate: 'desc' }
       });
 
       const roundedPrice = Number(item.price.toFixed(2));
+      let recordFlagged = false;
+      let recordFlagReason = null;
 
       if (latestPriceRecord && latestPriceRecord.price > 0) {
         const latestPrice = latestPriceRecord.price;
         const percentChange = Math.abs(roundedPrice - latestPrice) / latestPrice;
         
-        if (percentChange > 1) {
+        if (percentChange > 0.20) {
+          recordFlagged = true;
+          recordFlagReason = `Price shifted by ${(percentChange * 100).toFixed(1)}% vs previous baseline (₱${latestPrice.toFixed(2)} to ₱${roundedPrice.toFixed(2)})`;
           isOutlierDetected = true;
           outlierReason = `Significant price shift detected for ${commodity.name}: Previous ₱${latestPrice.toFixed(2)}, Extracted ₱${roundedPrice.toFixed(2)}`;
           console.warn(`[GeminiService] ${outlierReason}`);
         }
+      }
+      
+      if (item.confidenceScore < 90) {
+        recordFlagged = true;
+        const confidenceMsg = `Low AI Confidence (${item.confidenceScore}%)`;
+        recordFlagReason = recordFlagReason ? `${recordFlagReason}. ${confidenceMsg}` : confidenceMsg;
+        isOutlierDetected = true;
+        outlierReason = `Low confidence score detected for ${commodity.name}.`;
       }
 
       recordsToCreate.push({
@@ -194,7 +228,10 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
         price: roundedPrice,
         observedDate: observedDate,
         sourceBulletinId: bulletinId,
-        isVerified: false
+        isVerified: false,
+        confidenceScore: item.confidenceScore,
+        isFlagged: recordFlagged,
+        flagReason: recordFlagReason
       });
     }
 

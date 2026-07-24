@@ -26,14 +26,15 @@ interface UploadedDoc {
 
 interface AdminRecord {
   id: number;
-  commodity: string;
+  commodity: { name: string };
+  market: { name: string };
   price: number;
-  location: string;
-  date: string;
-  source: string;
+  observedDate: string;
   status: "pending" | "approved" | "rejected";
-  flagged?: boolean;
+  isFlagged?: boolean;
   flagReason?: string;
+  confidenceScore?: number;
+  isProxy?: boolean;
 }
 
 
@@ -461,11 +462,20 @@ export default function AdminPage() {
               <SL>{t.admin.validate.forReview}</SL>
               <div className="space-y-2">
                 {pending.map((r)=>(
-                  <div key={r.id} className={`bg-card rounded-xl border overflow-hidden ${r.isProxy?"border-blue-300":"border-border"}`}>
-                    {r.isProxy && (
+                  <div key={r.id} className={`bg-card rounded-xl border overflow-hidden ${r.isFlagged ? "border-amber-300" : (r.isProxy?"border-blue-300":"border-border")}`}>
+                    {r.isProxy && !r.isFlagged && (
                       <div className="flex items-center gap-2 px-4 py-2 bg-blue-100 border-b border-blue-200">
                         <AlertTriangle size={13} className="text-blue-600"/>
                         <p className="text-xs font-semibold text-blue-700">{t.admin.validate.proxyBaseline}</p>
+                      </div>
+                    )}
+                    {r.isFlagged && (
+                      <div className="flex items-start gap-2 px-4 py-2 bg-amber-50 border-b border-amber-200">
+                        <AlertTriangle size={13} className="text-amber-600 mt-0.5 shrink-0"/>
+                        <div className="flex-1">
+                          <p className="text-xs font-bold text-amber-700">Flagged for Review</p>
+                          <p className="text-[10px] text-amber-600 leading-tight">{r.flagReason}</p>
+                        </div>
                       </div>
                     )}
                     <div className="px-4 py-3">
@@ -474,7 +484,7 @@ export default function AdminPage() {
                           <p className="text-sm font-bold text-foreground">{r.commodity?.name}</p>
                           <p className="text-xs text-muted-foreground">{r.market?.name} · {new Date(r.observedDate).toLocaleDateString()}</p>
                         </div>
-                        <p className={`text-lg font-extrabold shrink-0 ${r.isProxy?"text-blue-700":"text-foreground"}`}>₱{Number(r.price).toFixed(2)}</p>
+                        <p className={`text-lg font-extrabold shrink-0 ${r.isFlagged?"text-amber-700":(r.isProxy?"text-blue-700":"text-foreground")}`}>₱{Number(r.price).toFixed(2)}</p>
                       </div>
                       <div className="flex gap-2">
                         <button onClick={()=>updateRec(r.id,"approved")}
