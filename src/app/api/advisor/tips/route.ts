@@ -47,11 +47,16 @@ Example format:
 
     const { GoogleGenerativeAI } = await import("@google/generative-ai");
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash", generationConfig: { temperature: 0.7 } });
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-3.5-flash", 
+      generationConfig: { 
+        temperature: 0.7,
+        responseMimeType: "application/json"
+      } 
+    });
     
     const result = await model.generateContent(prompt);
-    let text = result.response.text();
-    text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const text = result.response.text();
     
     const tips = JSON.parse(text);
 

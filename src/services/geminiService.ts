@@ -31,27 +31,35 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
     const mimeType = response.headers.get('content-type') || 'application/pdf';
 
     // 2. Call Gemini API
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ 
+      model: 'gemini-3.5-flash',
+      generationConfig: {
+        responseMimeType: "application/json"
+      }
+    });
     
     const validCommodities = await prisma.commodity.findMany({ select: { name: true } });
     const commodityNames = validCommodities.map(c => c.name).join(', ');
 
     const prompt = `
-      Analyze this market bulletin and extract the prices for the commodities listed.
-      You must return the data STRICTLY as a JSON array of objects.
-      Do not include any markdown formatting like \`\`\`json.
+      You are an expert data extraction assistant. Analyze this Philippine Department of Agriculture "DAILY PRICE INDEX" bulletin and extract the prevailing retail prices.
       
-      CRITICAL: You must ONLY use the following exact commodity names if they appear in the bulletin (or translate to them):
-      [${commodityNames}]
-      Do not use English translations if the valid name is in Tagalog (e.g. use "Sibuyas Pula" instead of "Red Onions").
+      CRITICAL INSTRUCTIONS:
+      1. Look for the "PREVAILING RETAIL PRICE PER UNIT" column for the prices.
+      2. If a price is listed as "n/a" or missing, skip that commodity entirely.
+      3. You must ONLY extract prices for commodities that map to the following exact names:
+         [${commodityNames}]
+      4. Do not use English translations if our valid name is in Tagalog (e.g. use "Sibuyas Pula" instead of "Red Onions"). Match the commodity concept to our list.
       
-      Format example:
+      Format your response as a JSON array of objects, using this exact schema:
       [
-        {"commodity": "Sibuyas Pula", "price": 120},
-        {"commodity": "Bawang", "price": 300}
+        {
+          "commodity": "Exact Name From List",
+          "price": 120.50
+        }
       ]
       
-      If you cannot find any prices matching the list, return an empty array [].
+      Return an empty array [] if no matches are found.
     `;
 
     const result = await model.generateContent([
@@ -66,15 +74,12 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
     
     const responseText = result.response.text().trim();
     
-    // Strip markdown formatting if Gemini still included it
-    const jsonString = responseText.replace(/^```(json)?\n?/i, '').replace(/\n?```$/i, '');
-    
     // 3. Parse JSON
     let extractedData: ExtractedPrice[] = [];
     try {
-      extractedData = JSON.parse(jsonString);
+      extractedData = JSON.parse(responseText);
     } catch (parseError) {
-      console.error('[GeminiService] Failed to parse JSON from Gemini:', jsonString);
+      console.error('[GeminiService] Failed to parse JSON from Gemini:', responseText);
       throw new Error('Gemini output was not valid JSON');
     }
 
