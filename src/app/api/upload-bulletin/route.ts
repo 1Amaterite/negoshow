@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { supabase } from '@/lib/supabaseClient';
 import { prisma } from '@/services/dbService';
 import { processBulletin } from '@/services/geminiService';
 
 export async function POST(request: Request) {
   try {
-    // Basic auth check
-    const authHeader = request.headers.get('Authorization');
-    if (!process.env.ADMIN_API_TOKEN || authHeader !== `Bearer ${process.env.ADMIN_API_TOKEN}`) {
+    const session = await getServerSession(authOptions);
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

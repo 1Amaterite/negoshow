@@ -123,9 +123,6 @@ export default function AdminPage() {
       const res = await fetch("/api/upload-bulletin", {
         method: "POST",
         body: formData,
-        headers: {
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_ADMIN_API_TOKEN || ''}`
-        }
       });
       
       if (!res.ok) {
@@ -169,8 +166,7 @@ export default function AdminPage() {
       await fetch('/api/admin/validation', {
         method: 'PATCH',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_ADMIN_API_TOKEN || ''}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ id, action: status })
       });

@@ -1,8 +1,15 @@
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { prisma } from '@/services/dbService';
 
 export async function GET(request: Request) {
   try {
+    const session = await getServerSession(authOptions);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const pendingPrices = await prisma.retailPrice.findMany({
       where: { isVerified: false },
       include: {
@@ -20,8 +27,8 @@ export async function GET(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const authHeader = request.headers.get('Authorization');
-    if (!process.env.ADMIN_API_TOKEN || authHeader !== `Bearer ${process.env.ADMIN_API_TOKEN}`) {
+    const session = await getServerSession(authOptions);
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
