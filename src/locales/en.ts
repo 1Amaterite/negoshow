@@ -53,7 +53,7 @@ export const en = {
   },
   dashboard: {
     title: "Overall Market Condition",
-    subtitle: "Current prices, trends, predictions, and buying recommendations · July 10, 2026",
+    subtitle: "Current prices, movement, predictions, and buying recommendations",
     keyMetrics: "Key Metrics",
     marketStability: "Market Stability",
     volatileCommodities: "Volatile Commodities",
@@ -157,7 +157,7 @@ export const en = {
     savePer10kg: "For 10 kg: you can save ₱{{amt}}",
     vendorTips: "Tips for Vendor",
     flaggedNotice: "Your quote (₱{{quotedPrice}}) is {{pct}}% higher than the baseline.",
-    baselineNotice: "Baseline for {{commodity}}: ₱{{baseline}}/kg · DA Bulletin Jul 10, 2026."
+    baselineNotice: "Baseline for {{commodity}}: ₱{{baseline}}/kg · DA Bulletin",
   },
   admin: {
     title: "Admin Panel",

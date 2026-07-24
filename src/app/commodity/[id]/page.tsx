@@ -9,17 +9,6 @@ import { PageHeader, SL, TrendBadge, KalagayanChip } from "@/components/ui";
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid } from "@/components/Charts";
 import { useTranslation } from "@/context/LanguageContext";
 
-function gen7Day(base: number, trend: "up"|"down"|"stable") {
-  const d = [];
-  let curr = trend==="up" ? base*0.8 : trend==="down" ? base*1.2 : base;
-  for(let i=0; i<7; i++) {
-    d.push({ day: `Jul ${4+i}`, presyo: Math.round(curr) });
-    if(trend==="up") curr += base*0.04;
-    else if(trend==="down") curr -= base*0.04;
-    else curr += (Math.random()-0.5)*5;
-  }
-  return d;
-}
 
 export default function CommodityPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -35,7 +24,18 @@ export default function CommodityPage({ params }: { params: Promise<{ id: string
 
   const commodity = dynamicCommodities.find((c: any) => c.id === id) || dynamicCommodities[0];
 
-  const [range, setRange] = useState<"7d"|"30d">("7d");
+  const [range, setRange] = useState<"7"|"30">("7");
+
+  // Fetch true historical trend data
+  const { data: trendData = [], isLoading: isTrendLoading } = useQuery({
+    queryKey: ['trend', commodity?.id, range],
+    queryFn: async () => {
+      if (!commodity?.id) return [];
+      const res = await fetch(`/api/analytics/trend?commodityId=${commodity.id}&days=${range}`);
+      return await res.json();
+    },
+    enabled: !!commodity?.id
+  });
 
   if (isLoading || !commodity) return <div className="p-8 text-center text-muted-foreground text-sm">Loading...</div>;
 
@@ -55,21 +55,21 @@ export default function CommodityPage({ params }: { params: Promise<{ id: string
           <div className="px-4 py-3 border-b border-border flex items-center justify-between">
             <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">{t.commodity.priceMovement}</p>
             <div className="flex bg-muted rounded-full overflow-hidden">
-              {(["7d","30d"] as const).map((r)=>(
+              {(["7","30"] as const).map((r)=>(
                 <button key={r} onClick={()=>setRange(r)} className={`px-3 py-1 text-xs font-semibold transition-colors ${range===r?"bg-primary text-white":"text-muted-foreground"}`}>
-                  {r==="7d"?t.commodity.days7:t.commodity.days30}
+                  {r==="7"?t.commodity.days7:t.commodity.days30}
                 </button>
               ))}
             </div>
           </div>
           <div className="px-2 pt-2 pb-3">
             <ResponsiveContainer width="100%" height={160}>
-              <LineChart data={gen7Day(commodity.baseline,commodity.trend)}>
+              <LineChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(114,121,110,0.15)"/>
-                <XAxis dataKey="day" tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false}/>
+                <XAxis dataKey="araw" tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false}/>
                 <YAxis tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false} width={45} tickFormatter={(v: any)=>`₱${new Intl.NumberFormat('en-US').format(v)}`} domain={["auto","auto"]}/>
-                <Tooltip contentStyle={{background:"#fcf9f8",border:"1px solid rgba(114,121,110,0.22)",borderRadius:8,fontSize:12}} formatter={(v:number)=>[`₱${v}/kg`,t.commodity.price]}/>
-                <Line type="monotone" dataKey="presyo" stroke="#154212" strokeWidth={2.5} dot={{fill:"#154212",r:3}}/>
+                <Tooltip contentStyle={{background:"#fcf9f8",border:"1px solid rgba(114,121,110,0.22)",borderRadius:8,fontSize:12}} formatter={(v:number)=>[`₱${v}/kg`,t.commodity.price]} labelFormatter={(label) => `${label}`}/>
+                <Line type="monotone" dataKey="aktwal" name={t.commodity.price} stroke="#154212" strokeWidth={2.5} dot={{fill:"#154212",r:3}} connectNulls={false}/>
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -83,7 +83,6 @@ export default function CommodityPage({ params }: { params: Promise<{ id: string
                   {i===0 && <span className="text-xs font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">{t.commodity.cheapest}</span>}
                   <div>
                     <p className="text-sm font-semibold text-foreground">{src.name}</p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1"><Navigation size={10}/>{src.distance}</p>
                   </div>
                 </div>
                 <p className={`text-lg font-extrabold ${i===0?"text-green-700":"text-foreground"}`}>₱{src.price}</p>

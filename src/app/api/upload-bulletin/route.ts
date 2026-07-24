@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   try {
     // Basic auth check
     const authHeader = request.headers.get('Authorization');
-    if (authHeader !== `Bearer ${process.env.ADMIN_API_TOKEN || 'admin-secret'}`) {
+    if (!process.env.ADMIN_API_TOKEN || authHeader !== `Bearer ${process.env.ADMIN_API_TOKEN}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

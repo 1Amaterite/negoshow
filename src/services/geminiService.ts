@@ -2,7 +2,6 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { prisma } from './dbService';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
-const DEFAULT_MARKET_ID = 1; // Pasay City Talipapa
 
 interface ExtractedPrice {
   commodity: string;
@@ -20,6 +19,11 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
     }
     
     const arrayBuffer = await response.arrayBuffer();
+    
+    // Fetch a dynamic fallback market in case coverage extraction isn't available yet
+    const defaultMarket = await prisma.market.findFirst();
+    const dynamicMarketId = defaultMarket?.id || 1;
+    
     const buffer = Buffer.from(arrayBuffer);
     const base64Data = buffer.toString('base64');
     
@@ -123,7 +127,7 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
 
       safeRecordsToCreate.push({
         commodityId: commodity.id,
-        marketId: DEFAULT_MARKET_ID,
+        marketId: dynamicMarketId,
         price: item.price,
         observedDate: new Date(),
         sourceBulletinId: bulletinId

@@ -6,6 +6,7 @@ import { useSession, signOut } from "next-auth/react";
 import { LogOut, Upload, Database, CheckCircle, FilePlus, Check, MapPin, ChevronDown, RefreshCw, Clock, Trash2, Info, AlertTriangle, X } from "lucide-react";
 import { PageHeader, SL } from "@/components/ui";
 import { useTranslation } from "@/context/LanguageContext";
+import { COMMODITY_NAMES, COVERAGE_AREAS } from "@/lib/constants";
 
 type AdminTab = "upload" | "validate";
 type DocStatus = "processing" | "validated" | "published";
@@ -34,18 +35,6 @@ interface AdminRecord {
   flagReason?: string;
 }
 
-const INITIAL_RECORDS: AdminRecord[] = [
-  { id: 1, commodity: "Sibuyas Pula", price: 165, location: "Pasay City Market", date: "Jul 10, 2026", source: "doc_5592.pdf", status: "pending", flagged: true, flagReason: "Variance > 15% (vs ₱140)" },
-  { id: 2, commodity: "Bawang", price: 120, location: "Pasay City Market", date: "Jul 10, 2026", source: "doc_5592.pdf", status: "pending" },
-  { id: 3, commodity: "Luya", price: 140, location: "Makati City Market", date: "Jul 09, 2026", source: "img_8821.jpg", status: "approved" },
-];
-
-const INITIAL_UPLOADS: UploadedDoc[] = [
-  { id: 101, filename: "DA_Bulletin_NCR_Jul9.pdf", sourceOffice: "DA Bantay Presyo (NCR)", bulletinDate: "2026-07-09", coverage: "Metro Manila", docType: "PDF", commodities: ["Sibuyas Pula","Bawang","Luya"], status: "published", uploadedAt: "Jul 09, 08:30 AM" },
-];
-
-const COVERAGE_AREAS = ["Metro Manila", "NCR - Pasay City", "NCR - Quezon City", "NCR - Manila City", "Region IV-A"];
-const COMMODITY_NAMES = ["Sibuyas Pula", "Bawang", "Luya", "Kamatis", "Siling Labuyo"];
 
 const DOC_STATUS: Record<DocStatus, { label: string; cls: string }> = {
   processing: { label: "Pinoproseso ng AI", cls: "bg-blue-50 text-blue-700 border-blue-200" },
@@ -61,7 +50,7 @@ export default function AdminPage() {
   const [tab, setTab] = useState<AdminTab>("upload");
   const [records, setRecords] = useState<any[]>([]);
   const [done, setDone] = useState<any[]>([]); // To hold approved/rejected logs if desired
-  const [uploads, setUploads] = useState<UploadedDoc[]>(INITIAL_UPLOADS);
+  const [uploads, setUploads] = useState<UploadedDoc[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
 
   // Upload form state
@@ -80,6 +69,7 @@ export default function AdminPage() {
     if (isAdmin) {
       fetchAlerts();
       fetchValidationRecords();
+      fetchUploads();
     }
   }, [isAdmin]);
 
@@ -89,6 +79,14 @@ export default function AdminPage() {
       const json = await res.json();
       if (json.data) setRecords(json.data);
     } catch(e) {}
+  };
+
+  const fetchUploads = async () => {
+    try {
+      const res = await fetch('/api/bulletins');
+      const json = await res.json();
+      if (json.data) setUploads(json.data);
+    } catch (e) {}
   };
 
   const fetchAlerts = async () => {
@@ -126,7 +124,7 @@ export default function AdminPage() {
         method: "POST",
         body: formData,
         headers: {
-          'Authorization': 'Bearer admin-secret'
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_ADMIN_API_TOKEN || ''}`
         }
       });
       
@@ -172,7 +170,7 @@ export default function AdminPage() {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer admin-secret'
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_ADMIN_API_TOKEN || ''}`
         },
         body: JSON.stringify({ id, action: status })
       });

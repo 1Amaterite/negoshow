@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const authHeader = request.headers.get('Authorization');
-    if (authHeader !== `Bearer ${process.env.ADMIN_API_TOKEN || 'admin-secret'}`) {
+    if (!process.env.ADMIN_API_TOKEN || authHeader !== `Bearer ${process.env.ADMIN_API_TOKEN}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

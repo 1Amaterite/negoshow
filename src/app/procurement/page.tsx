@@ -7,18 +7,36 @@ import { useQuery } from "@tanstack/react-query";
 import { VENDOR_TIPS } from "@/lib/constants";
 import { CommodityImage } from "@/components/ui";
 import { useTranslation } from "@/context/LanguageContext";
+import {
+  LineChart, Line, XAxis, YAxis, ResponsiveContainer,
+  Tooltip, CartesianGrid, ReferenceLine
+} from "@/components/Charts";
 
 export default function ProcurementPage() {
   const router = useRouter();
   const { t, lang } = useTranslation();
   const [tab, setTab] = useState<"overview"|"prices"|"recommendations">("overview");
+  const [predCId, setPredCId] = useState<string | null>(null);
 
   const { data: dynamicCommodities = [], isLoading } = useQuery({
     queryKey: ['commodities'],
     queryFn: async () => {
       const res = await fetch('/api/commodities');
-      return await res.json();
+      const data = await res.json();
+      if (!predCId && data.length > 0) setPredCId(data[0].id);
+      return data;
     }
+  });
+
+  // Fetch Historical Trend Data
+  const { data: trendData = [], isLoading: isTrendLoading } = useQuery({
+    queryKey: ['trend', predCId, "30"],
+    queryFn: async () => {
+      if (!predCId) return [];
+      const res = await fetch(`/api/analytics/trend?commodityId=${predCId}&days=30`);
+      return await res.json();
+    },
+    enabled: !!predCId
   });
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading procurement data...</div>;
@@ -30,6 +48,18 @@ export default function ProcurementPage() {
   const onOpenAdvisor = (c: any) => {
     router.push(`/advisor?id=${c.id}`);
   };
+  
+  const predC = dynamicCommodities.find((c: any) => c.id === predCId) || dynamicCommodities[0];
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div className="bg-background border border-border rounded-xl px-3 py-2 shadow-lg text-xs">
+        <p className="font-bold text-foreground mb-1">{label}</p>
+        <p className="text-primary font-semibold">{t.dashboard?.actualPrice || "Baseline Price"}: ₱{payload[0].value}</p>
+      </div>
+    );
+  };
 
   return (
     <div className="procurement-page">
@@ -39,7 +69,7 @@ export default function ProcurementPage() {
           <h1>{t.procurement.title}</h1>
           <p>{t.procurement.subtitle}</p>
         </div>
-        <div className="procurement-date"><Clock size={15}/> {t.procurement.lastUpdate}: Hulyo 10, 2026 · 9:00 AM</div>
+        <div className="procurement-date"><Clock size={15}/> {t.procurement.lastUpdate}: {new Date().toLocaleString(lang === 'tl' ? 'tl-PH' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>
       </div>
 
       <div className="procurement-tabs">
@@ -83,11 +113,47 @@ export default function ProcurementPage() {
           </div>
         </>}
 
-        {tab==="prices" && <section className="procurement-panel">
-          <div className="panel-heading"><div><h2>{t.procurement.priceComparison.title}</h2><p>{t.procurement.priceComparison.subtitle}</p></div></div>
-          <div className="price-table-wrap"><table className="price-table"><thead><tr><th>{t.procurement.priceComparison.commodity}</th><th>{t.procurement.priceComparison.currentBaseline}</th><th>{t.procurement.priceComparison.lowestOffer}</th><th>{t.procurement.priceComparison.avg30Day}</th><th>{t.procurement.priceComparison.difference}</th><th>{t.procurement.priceComparison.market}</th></tr></thead><tbody>
-            {dynamicCommodities.map((c: any)=><tr key={c.id}><td><CommodityImage commodity={c} size="sm"/><strong>{lang === 'tl' ? c.tagalog : c.name}</strong></td><td>₱{c.baseline}/kg</td><td className="price-good">₱{c.sources[0].price}/kg</td><td>₱{c.baseline30d}/kg</td><td className={c.sources[0].price<c.baseline?"price-good":""}>{t.procurement.priceComparison.lower.replace('{{amt}}', Math.abs(c.baseline-c.sources[0].price).toString())}</td><td>{c.sources[0].name}<small>{c.sources[0].distance}</small></td></tr>)}
-          </tbody></table></div>
+        {tab==="prices" && <section className="space-y-6">
+          <div className="procurement-panel">
+            <div className="panel-heading mb-4">
+              <div>
+                <h2>Historical Price Trends</h2>
+                <p>Analyze how the baseline prices have changed over the last 30 days to optimize your procurement strategy.</p>
+              </div>
+            </div>
+            
+            <div className="flex gap-1.5 mb-3 mt-2 overflow-x-auto pb-1 scrollbar-hide px-4">
+              {dynamicCommodities.map((c: any)=>(
+                <button key={c.id} onClick={()=>setPredCId(c.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border whitespace-nowrap transition-colors shrink-0 ${
+                    predC?.id===c.id?"bg-primary text-white border-primary":"bg-card border-border text-foreground"
+                  }`}><CommodityImage commodity={c} size="sm" className="!w-6 !h-6 !rounded-md"/>{c.shortLabel}</button>
+              ))}
+            </div>
+
+            <div className="px-4 pb-4">
+              {isTrendLoading ? (
+                <div className="h-[240px] flex items-center justify-center text-xs text-muted-foreground">Loading chart...</div>
+              ) : (
+                <ResponsiveContainer width="100%" height={240}>
+                  <LineChart data={trendData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(114,121,110,0.15)"/>
+                    <XAxis dataKey="araw" tick={{fontSize:9,fill:"#72796e"}} axisLine={false} tickLine={false}/>
+                    <YAxis tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false} width={45} tickFormatter={(v: any)=>`₱${v}`}/>
+                    <Tooltip content={<CustomTooltip/>}/>
+                    <Line type="monotone" dataKey="aktwal" stroke="#154212" strokeWidth={2.5} dot={{fill:"#154212",r:3}} connectNulls={false}/>
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+          
+          <div className="procurement-panel">
+            <div className="panel-heading"><div><h2>{t.procurement.priceComparison.title}</h2><p>{t.procurement.priceComparison.subtitle}</p></div></div>
+            <div className="price-table-wrap"><table className="price-table"><thead><tr><th>{t.procurement.priceComparison.commodity}</th><th>{t.procurement.priceComparison.currentBaseline}</th><th>{t.procurement.priceComparison.lowestOffer}</th><th>{t.procurement.priceComparison.avg30Day}</th><th>{t.procurement.priceComparison.difference}</th><th>{t.procurement.priceComparison.market}</th></tr></thead><tbody>
+              {dynamicCommodities.map((c: any)=><tr key={c.id}><td><CommodityImage commodity={c} size="sm"/><strong>{lang === 'tl' ? c.tagalog : c.name}</strong></td><td>₱{c.baseline}/kg</td><td className="price-good">₱{c.sources[0].price}/kg</td><td>₱{c.baseline30d}/kg</td><td className={c.sources[0].price<c.baseline?"price-good":""}>{t.procurement.priceComparison.lower.replace('{{amt}}', Math.abs(c.baseline-c.sources[0].price).toString())}</td><td>{c.sources[0].name}<small>{c.sources[0].distance}</small></td></tr>)}
+            </tbody></table></div>
+          </div>
         </section>}
 
         {tab==="recommendations" && <div className="recommendation-cards">

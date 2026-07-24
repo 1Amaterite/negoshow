@@ -224,7 +224,7 @@ export default function DashboardPage() {
                     <XAxis dataKey="araw" tick={{fontSize:9,fill:"#72796e"}} axisLine={false} tickLine={false}/>
                     <YAxis tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false} width={45} tickFormatter={(v: any)=>`₱${new Intl.NumberFormat('en-US').format(v)}`} domain={["auto","auto"]}/>
                     <Tooltip content={<PredTip/>}/>
-                    <ReferenceLine x="Jul 10" stroke="rgba(114,121,110,0.4)" strokeDasharray="4 4" label={{value:"Today",position:"top",fontSize:9,fill:"#72796e"}}/>
+                    <ReferenceLine x={new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} stroke="rgba(114,121,110,0.4)" strokeDasharray="4 4" label={{value:"Today",position:"top",fontSize:9,fill:"#72796e"}}/>
                     <Line type="monotone" dataKey="aktwal" name={t.dashboard.actualPrice} stroke="#154212" strokeWidth={2.5} dot={{fill:"#154212",r:3}} connectNulls={false}/>
                     <Line type="monotone" dataKey="hula"   name={t.dashboard.predictedPrice} stroke="#f59e0b" strokeWidth={2}   strokeDasharray="5 4" dot={{fill:"#f59e0b",r:3}} connectNulls={false}/>
                   </LineChart>

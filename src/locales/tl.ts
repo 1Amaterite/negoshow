@@ -55,7 +55,7 @@ export const tl: TranslationKeys = {
   },
   dashboard: {
     title: "Pangkalahatang Kalagayan ng Merkado",
-    subtitle: "Kasalukuyang presyo, galaw, prediksyon, at mga rekomendasyon sa pagbili · Hulyo 10, 2026",
+    subtitle: "Kasalukuyang presyo, galaw, prediksyon, at mga rekomendasyon sa pagbili",
     keyMetrics: "Mahahalagang Sukatan",
     marketStability: "Katatagan ng Merkado",
     volatileCommodities: "Mga Pabago-bagong Kalakal",
@@ -159,7 +159,7 @@ export const tl: TranslationKeys = {
     savePer10kg: "Sa 10 kilo: makatitipid ka ng ₱{{amt}}",
     vendorTips: "Tips para sa Vendor",
     flaggedNotice: "Ang iyong quote (₱{{quotedPrice}}) ay {{pct}}% na mas mataas sa baseline.",
-    baselineNotice: "Baseline ng {{commodity}}: ₱{{baseline}}/kg · DA Bulletin Jul 10, 2026."
+    baselineNotice: "Baseline ng {{commodity}}: ₱{{baseline}}/kg · DA Bulletin",
   },
   admin: {
     title: "Admin Panel",

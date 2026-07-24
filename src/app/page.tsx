@@ -62,7 +62,7 @@ export default function Home() {
           <div className="col-span-2 bg-card rounded-xl p-3 border border-border flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground">{t.home.lastBaselineUpdate}</p>
-              <p className="text-sm font-bold text-foreground">Jul 10, 2026 — DA Bulletin</p>
+              <p className="text-sm font-bold text-foreground">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} — DA Bulletin</p>
             </div>
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"/>
           </div>

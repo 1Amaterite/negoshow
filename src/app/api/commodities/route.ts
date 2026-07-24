@@ -10,6 +10,7 @@ export async function GET() {
         retailPrices: {
           orderBy: { observedDate: 'desc' },
           take: 30, // Get last 30 days to calculate baseline/30d
+          include: { market: true }
         },
         vendorChecks: {
           orderBy: { checkedAt: 'desc' },
@@ -40,6 +41,22 @@ export async function GET() {
       if (Math.abs(change) > 5) volatility = "Medium";
       if (Math.abs(change) > 10) volatility = "High";
 
+      // Get unique markets and their latest price for this commodity
+      const marketLatestPrices = new Map<string, number>();
+      for (const rp of c.retailPrices) {
+        if (rp.market?.name && !marketLatestPrices.has(rp.market.name)) {
+          marketLatestPrices.set(rp.market.name, rp.price);
+        }
+      }
+      
+      const sources = Array.from(marketLatestPrices.entries())
+        .slice(0, 3)
+        .map(([name, price]) => ({
+          name,
+          price: Math.round(price)
+        }))
+        .sort((a, b) => a.price - b.price); // sort by cheapest first
+
       return {
         id: c.name.toLowerCase().replace(" ", "-"),
         name: c.name,
@@ -52,12 +69,8 @@ export async function GET() {
         change: Math.round(change),
         changeAbs: Math.round(changeAbs),
         volatility,
-        primarySource: "Divisoria Market", // MVP mock
-        sources: [
-          { name: "Divisoria Market", price: Math.round(latestPrice * 0.95), distance: "2.1 km" },
-          { name: "Pasay Central", price: Math.round(latestPrice * 1.05), distance: "0.8 km" },
-          { name: "Cartimar Market", price: Math.round(latestPrice), distance: "0.3 km" },
-        ]
+        primarySource: c.retailPrices[0]?.market?.name || "Multiple Sources",
+        sources
       };
     });
 
