@@ -34,13 +34,13 @@ export async function PATCH(request: Request) {
 
     const { id, action } = await request.json(); // action can be 'approve' or 'reject'
     
-    if (action === 'approve') {
+    if (action === 'approve' || action === 'approved') {
       const updated = await prisma.retailPrice.update({
         where: { id },
         data: { isVerified: true }
       });
       return NextResponse.json({ success: true, data: updated });
-    } else if (action === 'reject') {
+    } else if (action === 'reject' || action === 'rejected') {
       await prisma.retailPrice.delete({
         where: { id }
       });
