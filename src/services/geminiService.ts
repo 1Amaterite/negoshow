@@ -294,10 +294,18 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
       data: { processedStatus: 'REQUIRES_MANUAL_REVIEW' }
     });
     
+    let friendlyErrorMessage = error.message || "Unknown error occurred";
+    if (friendlyErrorMessage.includes('429 Too Many Requests') || friendlyErrorMessage.includes('Quota exceeded')) {
+      friendlyErrorMessage = "API Quota Exceeded. Please check your billing or wait a moment.";
+    } else if (friendlyErrorMessage.length > 200) {
+      // Split out the massive JSON payload Google sometimes returns
+      friendlyErrorMessage = friendlyErrorMessage.split(/\[{"@type"/)[0].substring(0, 200).trim() + "...";
+    }
+
     // Create an alert for admin dashboard explaining why it failed
     await prisma.adminAlert.create({
       data: {
-        message: `AI Processing failed for Bulletin ID ${bulletinId}: ${error.message || "Unknown error occurred"}`,
+        message: `AI Processing failed for Bulletin ID ${bulletinId}: ${friendlyErrorMessage}`,
         isRead: false
       }
     });
