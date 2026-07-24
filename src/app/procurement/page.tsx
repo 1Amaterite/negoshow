@@ -151,12 +151,12 @@ export default function ProcurementPage() {
                   };
 
                   return (
-                    <div key={i} className="group flex items-start gap-3.5 bg-card hover:bg-slate-50 transition-all duration-300 rounded-xl px-4 py-4 border border-border/80 shadow-sm hover:shadow-md cursor-default">
+                    <div key={i} className="group flex items-start gap-3.5 hover:bg-slate-50/80 transition-all duration-300 rounded-lg px-3 py-3 cursor-default border-b border-border/40 last:border-0">
                       <div className={`shrink-0 p-2.5 rounded-full transition-transform duration-300 group-hover:scale-110 ${getColor(tip.icon)}`}>
-                        <DynamicIcon name={tip.icon} size={20} />
+                        <DynamicIcon name={tip.icon} size={18} />
                       </div>
                       <div className="pt-0.5">
-                        <strong className="block text-sm text-foreground mb-1 font-extrabold tracking-tight">
+                        <strong className="block text-sm text-foreground mb-1 font-semibold tracking-tight">
                           {tip.titleEn ? (lang === 'tl' ? tip.title : tip.titleEn) : tip.title}
                         </strong>
                         <p className="text-[13px] leading-relaxed text-muted-foreground">
