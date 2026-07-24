@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { GoogleGenerativeAI, SchemaType, GenerationConfig } from '@google/generative-ai';
 import { prisma } from './dbService';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -35,33 +35,6 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
     
     const mimeType = response.headers.get('content-type') || 'application/pdf';
 
-    // 2. Call Gemini API
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-3.5-flash-lite',
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: SchemaType.OBJECT,
-          properties: {
-            bulletinDate: { type: SchemaType.STRING, description: "Formatted as YYYY-MM-DD" },
-            extractedPrices: {
-              type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  commodity: { type: SchemaType.STRING },
-                  price: { type: SchemaType.NUMBER },
-                  confidenceScore: { type: SchemaType.NUMBER, description: "A score from 0 to 100 representing how confident you are in this extracted price based on document legibility" }
-                },
-                required: ["commodity", "price", "confidenceScore"]
-              }
-            }
-          },
-          required: ["bulletinDate", "extractedPrices"]
-        }
-      }
-    });
-    
     const validCommodities = await prisma.commodity.findMany({ select: { name: true } });
     const commodityNames = validCommodities.map(c => c.name).join(', ');
 
@@ -108,17 +81,69 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
       }
     `;
 
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          data: base64Data,
-          mimeType
-        }
+    // 2. Call Gemini API with Fallbacks
+    const fallbackModels = [
+      'gemini-3.5-flash-lite',
+      'gemini-3.1-flash-lite',
+      'gemini-2.5-flash-lite',
+      'gemini-3.5-flash',
+      'gemini-2.5-flash',
+      'gemini-3-flash'
+    ];
+
+    const generationConfig: GenerationConfig = {
+      responseMimeType: "application/json",
+      responseSchema: {
+        type: SchemaType.OBJECT,
+        properties: {
+          bulletinDate: { type: SchemaType.STRING, description: "Formatted as YYYY-MM-DD" },
+          extractedPrices: {
+            type: SchemaType.ARRAY,
+            items: {
+              type: SchemaType.OBJECT,
+              properties: {
+                commodity: { type: SchemaType.STRING },
+                price: { type: SchemaType.NUMBER },
+                confidenceScore: { type: SchemaType.NUMBER, description: "A score from 0 to 100 representing how confident you are in this extracted price based on document legibility" }
+              },
+              required: ["commodity", "price", "confidenceScore"]
+            }
+          }
+        },
+        required: ["bulletinDate", "extractedPrices"]
       }
-    ]);
-    
-    const rawResponseText = result.response.text().trim();
+    };
+
+    let rawResponseText = "";
+    let lastError: any = null;
+
+    for (const modelName of fallbackModels) {
+      try {
+        console.log(`[GeminiService] Attempting extraction with model: ${modelName}`);
+        const model = genAI.getGenerativeModel({ model: modelName, generationConfig });
+        
+        const result = await model.generateContent([
+          prompt,
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType
+            }
+          }
+        ]);
+        
+        rawResponseText = result.response.text().trim();
+        console.log(`[GeminiService] Successfully extracted data using model: ${modelName}`);
+        break; // Stop at first successful model
+      } catch (error: any) {
+        console.warn(`[GeminiService] Model ${modelName} failed. Reason: ${error.message}`);
+        lastError = error;
+      }
+    }
+
+    if (!rawResponseText) {
+      throw new Error(`All Gemini fallback models failed due to quota or access limits. Last error: ${lastError?.message}`);
+    }
     // Strip potential markdown code fences if generated
     const cleanJsonText = rawResponseText
       .replace(/^```json\s*/i, '')
