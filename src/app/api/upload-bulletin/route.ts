@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabaseClient';
 import { prisma } from '@/services/dbService';
 import { processBulletin } from '@/services/geminiService';
 
+export const maxDuration = 60; // Allow up to 60 seconds for Gemini PDF parsing
+
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);

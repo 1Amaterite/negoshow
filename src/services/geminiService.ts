@@ -225,11 +225,19 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
       console.log(`[GeminiService] Bulletin ${bulletinId} processed successfully with ${recordsToCreate.length} prices.`);
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[GeminiService] Error processing bulletin ${bulletinId}:`, error);
     await prisma.bulletinRecord.update({
       where: { id: bulletinId },
       data: { processedStatus: 'REQUIRES_MANUAL_REVIEW' }
+    });
+    
+    // Create an alert for admin dashboard explaining why it failed
+    await prisma.adminAlert.create({
+      data: {
+        message: `AI Processing failed for Bulletin ID ${bulletinId}: ${error.message || "Unknown error occurred"}`,
+        isRead: false
+      }
     });
   }
 }

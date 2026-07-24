@@ -10,7 +10,7 @@ import { useTranslation } from "@/context/LanguageContext";
 import { COMMODITY_NAMES, COVERAGE_AREAS } from "@/lib/constants";
 
 type AdminTab = "upload" | "validate";
-type DocStatus = "processing" | "validated" | "published";
+type DocStatus = "processing" | "validated" | "published" | "failed";
 
 interface UploadedDoc {
   id: number;
@@ -41,6 +41,7 @@ const DOC_STATUS: Record<DocStatus, { label: string; cls: string }> = {
   processing: { label: "Pinoproseso ng AI", cls: "bg-blue-50 text-blue-700 border-blue-200" },
   validated:  { label: "Handa i-publish",   cls: "bg-amber-50 text-amber-700 border-amber-200" },
   published:  { label: "Na-publish na",     cls: "bg-green-50 text-green-700 border-green-200" },
+  failed:     { label: "Bigo (Tingnan ang Alerts)", cls: "bg-red-50 text-red-700 border-red-200" },
 };
 
 export default function AdminPage() {
@@ -95,7 +96,7 @@ export default function AdminPage() {
           coverage: b.location || "Metro Manila",
           docType: b.type === "IMG" ? "Image" : "PDF",
           commodities: b.commodities || ["Lahat ng Gulay"],
-          status: b.verified ? "published" : "validated",
+          status: b.status === "PROCESSED" ? "published" : (b.status === "PENDING" ? "processing" : (b.status === "REQUIRES_MANUAL_REVIEW" ? "failed" : "validated")),
           uploadedAt: b.date || new Date().toLocaleString("en-PH",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}),
         }));
         setUploads(mapped);
@@ -161,9 +162,11 @@ export default function AdminPage() {
       
       setUploads((p)=>[doc,...p]);
       // Fetch fresh validation records created by Gemini AI and updated bulletin list
-      fetchValidationRecords();
-      fetchUploads();
-      setTimeout(()=>setUploads((p)=>p.map((d)=>d.id===doc.id?{...d,status:"validated"}:d)), 2000);
+      // Add a slight delay to allow Gemini to finish before fetching
+      setTimeout(() => {
+        fetchValidationRecords();
+        fetchUploads();
+      }, 5000);
       
       setSourceOffice(""); setBulletinDate(""); setCoverage("");
       setSelectedFile(null); setSelectedComms([]);
@@ -177,8 +180,30 @@ export default function AdminPage() {
     }
   };
 
-  const publishDoc  = (id: number) => setUploads((p)=>p.map((d)=>d.id===id&&d.status==="validated"?{...d,status:"published"}:d));
-  const deleteDoc   = (id: number) => setUploads((p)=>p.filter((d)=>d.id!==id));
+  const publishDoc = async (id: number) => {
+    try {
+      await fetch('/api/bulletins', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      setUploads((p) => p.map((d) => d.id === id && d.status === "validated" ? { ...d, status: "published" } : d));
+    } catch (e) {
+      console.error(e);
+      alert('Failed to publish document');
+    }
+  };
+
+  const deleteDoc = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this bulletin?")) return;
+    try {
+      await fetch(`/api/bulletins?id=${id}`, { method: 'DELETE' });
+      setUploads((p) => p.filter((d) => d.id !== id));
+    } catch (e) {
+      console.error(e);
+      alert('Failed to delete document');
+    }
+  };
   const updateRec = async (id: number, status: "approved"|"rejected") => {
     try {
       await fetch('/api/admin/validation', {

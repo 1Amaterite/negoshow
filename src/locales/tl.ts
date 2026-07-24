@@ -196,7 +196,8 @@ export const tl: TranslationKeys = {
       docStatus: {
         processing: "Pinoproseso ng AI",
         validated: "Handa i-publish",
-        published: "Na-publish na"
+        published: "Na-publish na",
+        failed: "Bigo (Tingnan ang Alerts)"
       }
     },
     validate: {

@@ -194,7 +194,8 @@ export const en = {
       docStatus: {
         processing: "AI Processing",
         validated: "Ready to publish",
-        published: "Published"
+        published: "Published",
+        failed: "Failed (See Alerts)"
       }
     },
     validate: {
