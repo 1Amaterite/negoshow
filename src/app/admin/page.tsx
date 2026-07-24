@@ -165,6 +165,7 @@ export default function AdminPage() {
       // Fetch fresh validation records created by Gemini AI and updated bulletin list
       // Add a slight delay to allow Gemini to finish before fetching
       setTimeout(() => {
+        fetchAlerts();
         fetchValidationRecords();
         fetchUploads();
       }, 5000);

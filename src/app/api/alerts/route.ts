@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/services/dbService';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const alerts = await prisma.adminAlert.findMany({
