@@ -45,7 +45,7 @@ export default function CommodityPage({ params }: { params: Promise<{ id: string
       <div className="px-4 pt-4 pb-6 space-y-4">
         <div className="bg-primary rounded-2xl px-5 py-5 text-white">
           <p className="text-xs text-white/60 uppercase tracking-widest font-semibold mb-1">{t.commodity.currentBaseline}</p>
-          <p className="text-4xl font-extrabold">₱{commodity.baseline}<span className="text-xl font-medium text-white/60">/kg</span></p>
+          <p className="text-4xl font-extrabold">₱{Number(commodity.baseline).toFixed(2)}<span className="text-xl font-medium text-white/60">/kg</span></p>
           <div className="flex items-center gap-3 mt-2 flex-wrap">
             <TrendBadge trend={commodity.trend} change={commodity.change} changeAbs={commodity.changeAbs}/>
             <KalagayanChip volatility={commodity.volatility}/>
@@ -68,7 +68,7 @@ export default function CommodityPage({ params }: { params: Promise<{ id: string
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(114,121,110,0.15)"/>
                 <XAxis dataKey="araw" tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false}/>
                 <YAxis tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false} width={45} tickFormatter={(v: any)=>`₱${new Intl.NumberFormat('en-US').format(v)}`} domain={["auto","auto"]}/>
-                <Tooltip contentStyle={{background:"#fcf9f8",border:"1px solid rgba(114,121,110,0.22)",borderRadius:8,fontSize:12}} formatter={(v:number)=>[`₱${v}/kg`,t.commodity.price]} labelFormatter={(label) => `${label}`}/>
+                <Tooltip contentStyle={{background:"#fcf9f8",border:"1px solid rgba(114,121,110,0.22)",borderRadius:8,fontSize:12}} formatter={(v:number)=>[`₱${Number(v).toFixed(2)}/kg`,t.commodity.price]} labelFormatter={(label) => `${label}`}/>
                 <Line type="monotone" dataKey="aktwal" name={t.commodity.price} stroke="#154212" strokeWidth={2.5} dot={{fill:"#154212",r:3}} connectNulls={false}/>
               </LineChart>
             </ResponsiveContainer>
@@ -85,7 +85,7 @@ export default function CommodityPage({ params }: { params: Promise<{ id: string
                     <p className="text-sm font-semibold text-foreground">{src.name}</p>
                   </div>
                 </div>
-                <p className={`text-lg font-extrabold ${i===0?"text-green-700":"text-foreground"}`}>₱{src.price}</p>
+                <p className={`text-lg font-extrabold ${i===0?"text-green-700":"text-foreground"}`}>₱{Number(src.price).toFixed(2)}</p>
               </div>
             ))}
           </div>

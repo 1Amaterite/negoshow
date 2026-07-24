@@ -20,7 +20,7 @@ export async function GET() {
       verified: b.processedStatus === 'PROCESSED'
     }));
 
-    return NextResponse.json(data);
+    return NextResponse.json({ data });
   } catch (error) {
     console.error("Failed to fetch bulletins:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

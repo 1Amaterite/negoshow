@@ -138,7 +138,7 @@ export default function DashboardPage() {
                     <p className="text-[10px] text-muted-foreground truncate">{c.primarySource}</p>
                   </div>
                 </div>
-                <p className="text-sm font-extrabold text-foreground text-right">₱{c.baseline}</p>
+                <p className="text-sm font-extrabold text-foreground text-right">₱{Number(c.baseline).toFixed(2)}</p>
                 <div className="flex justify-end">
                   {c.trend==="up"     && <span className="text-[10px] font-bold text-red-600   flex items-center gap-0.5"><TrendingUp size={10}/>+{c.change}%</span>}
                   {c.trend==="down"   && <span className="text-[10px] font-bold text-green-700 flex items-center gap-0.5"><TrendingDown size={10}/>{c.change}%</span>}

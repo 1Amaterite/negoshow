@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { LogOut, Upload, Database, CheckCircle, FilePlus, Check, MapPin, ChevronDown, RefreshCw, Clock, Trash2, Info, AlertTriangle, X } from "lucide-react";
 import { PageHeader, SL } from "@/components/ui";
+import { LanguageToggle } from "@/components/LanguageToggle";
 import { useTranslation } from "@/context/LanguageContext";
 import { COMMODITY_NAMES, COVERAGE_AREAS } from "@/lib/constants";
 
@@ -71,7 +72,7 @@ export default function AdminPage() {
       fetchValidationRecords();
       fetchUploads();
     }
-  }, [isAdmin]);
+  }, [isAdmin, tab]);
 
   const fetchValidationRecords = async () => {
     try {
@@ -85,8 +86,23 @@ export default function AdminPage() {
     try {
       const res = await fetch('/api/bulletins');
       const json = await res.json();
-      if (json.data) setUploads(json.data);
-    } catch (e) {}
+      if (json.data && Array.isArray(json.data)) {
+        const mapped: UploadedDoc[] = json.data.map((b: any) => ({
+          id: typeof b.id === 'number' ? b.id : parseInt(b.id) || Date.now(),
+          filename: b.fileUrl ? b.fileUrl.split('/').pop() : "Bulletin File",
+          sourceOffice: b.source || "DA Bantay Presyo",
+          bulletinDate: b.date || new Date().toLocaleDateString(),
+          coverage: b.location || "Metro Manila",
+          docType: b.type === "IMG" ? "Image" : "PDF",
+          commodities: b.commodities || ["Lahat ng Gulay"],
+          status: b.verified ? "published" : "validated",
+          uploadedAt: b.date || new Date().toLocaleString("en-PH",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}),
+        }));
+        setUploads(mapped);
+      }
+    } catch (e) {
+      console.error("Failed to fetch uploads:", e);
+    }
   };
 
   const fetchAlerts = async () => {
@@ -144,7 +160,9 @@ export default function AdminPage() {
       };
       
       setUploads((p)=>[doc,...p]);
-      // Simulate it moving to validated after processing since our backend does it synchronously
+      // Fetch fresh validation records created by Gemini AI and updated bulletin list
+      fetchValidationRecords();
+      fetchUploads();
       setTimeout(()=>setUploads((p)=>p.map((d)=>d.id===doc.id?{...d,status:"validated"}:d)), 2000);
       
       setSourceOffice(""); setBulletinDate(""); setCoverage("");
@@ -195,12 +213,17 @@ export default function AdminPage() {
   return (
     <div className="admin-dashboard min-h-screen bg-muted/30">
       <PageHeader
-        title="Dashboard ng Admin" subtitle="NegoShow Talipapa Utility" onBack={() => router.push("/more")}
+        title={lang === "en" ? "Admin Dashboard" : "Dashboard ng Admin"} 
+        subtitle="NegoShow Talipapa Utility" 
+        onBack={() => router.push("/more")}
         right={
-          <button onClick={() => signOut({ callbackUrl: '/admin/login' })} className="flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-red-600 transition-colors bg-white/50 px-3 py-1.5 rounded-full border border-border/50">
-            <LogOut size={14}/>
-            <span className="hidden sm:inline">{t.admin.logout}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <LanguageToggle />
+            <button onClick={() => signOut({ callbackUrl: '/admin/login' })} className="flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-red-600 transition-colors bg-white/50 px-3 py-1.5 rounded-full border border-border/50">
+              <LogOut size={14}/>
+              <span className="hidden sm:inline">{t.admin.logout}</span>
+            </button>
+          </div>
         }
       />
 
@@ -221,7 +244,10 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <div className="admin-tabs flex bg-muted border-b border-border md:flex-col md:border md:rounded-2xl md:overflow-hidden md:bg-card">
-        {([["upload","I-upload",Upload],["validate","I-validate",Database]] as [AdminTab,string,React.ElementType][]).map(([id,label,Icon])=>(
+        {([
+          ["upload", lang === "en" ? "Upload Bulletin" : "I-upload", Upload],
+          ["validate", lang === "en" ? "Validate Queue" : "I-validate", Database]
+        ] as [AdminTab,string,React.ElementType][]).map(([id,label,Icon])=>(
           <button key={id} onClick={()=>setTab(id)}
             className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-colors border-b-2 ${
               tab===id?"border-primary text-primary bg-background":"border-transparent text-muted-foreground"
@@ -423,7 +449,7 @@ export default function AdminPage() {
                           <p className="text-sm font-bold text-foreground">{r.commodity?.name}</p>
                           <p className="text-xs text-muted-foreground">{r.market?.name} · {new Date(r.observedDate).toLocaleDateString()}</p>
                         </div>
-                        <p className={`text-lg font-extrabold shrink-0 ${r.isProxy?"text-blue-700":"text-foreground"}`}>₱{r.price}</p>
+                        <p className={`text-lg font-extrabold shrink-0 ${r.isProxy?"text-blue-700":"text-foreground"}`}>₱{Number(r.price).toFixed(2)}</p>
                       </div>
                       <div className="flex gap-2">
                         <button onClick={()=>updateRec(r.id,"approved")}
@@ -449,7 +475,7 @@ export default function AdminPage() {
                 {done.map((r)=>(
                   <div key={r.id} className="flex items-center justify-between bg-card rounded-xl px-4 py-3 border border-border">
                     <div>
-                      <p className="text-sm font-semibold text-foreground">{r.commodity?.name} — ₱{r.price}</p>
+                      <p className="text-sm font-semibold text-foreground">{r.commodity?.name} — ₱{Number(r.price).toFixed(2)}</p>
                       <p className="text-xs text-muted-foreground">{r.market?.name} · {new Date(r.observedDate).toLocaleDateString()}</p>
                     </div>
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${r.status==="approved"?"bg-green-100 text-green-700 border-green-200":"bg-red-100 text-red-700 border-red-200"}`}>

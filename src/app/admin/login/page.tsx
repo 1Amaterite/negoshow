@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Lock, Eye, EyeOff, AlertTriangle, RefreshCw } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { PageHeader } from "@/components/ui";
+import { LanguageToggle } from "@/components/LanguageToggle";
 import { useTranslation } from "@/context/LanguageContext";
 
 export default function AdminLoginPage() {
@@ -58,7 +59,7 @@ export default function AdminLoginPage() {
 
   return (
     <div className="min-h-screen bg-muted/40">
-      <PageHeader title={t.login.title} onBack={() => router.push("/more")}/>
+      <PageHeader title={t.login.title} onBack={() => router.push("/more")} right={<LanguageToggle />}/>
       <div className="px-4 md:px-8 py-8 md:py-14">
         <div className="mx-auto max-w-md bg-background md:bg-card md:border md:border-border md:rounded-3xl md:shadow-xl md:shadow-primary/5 md:p-8">
         <div className="flex flex-col items-center mb-8">

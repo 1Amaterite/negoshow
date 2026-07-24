@@ -8,6 +8,11 @@ interface ExtractedPrice {
   price: number;
 }
 
+interface GeminiExtractionResult {
+  bulletinDate?: string;
+  extractedPrices: ExtractedPrice[];
+}
+
 export async function processBulletin(bulletinId: number, fileUrl: string) {
   try {
     console.log(`[GeminiService] Processing bulletin ${bulletinId} from URL: ${fileUrl}`);
@@ -20,19 +25,18 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
     
     const arrayBuffer = await response.arrayBuffer();
     
-    // Fetch a dynamic fallback market in case coverage extraction isn't available yet
+    // Fetch a default market for location reference
     const defaultMarket = await prisma.market.findFirst();
     const dynamicMarketId = defaultMarket?.id || 1;
     
     const buffer = Buffer.from(arrayBuffer);
     const base64Data = buffer.toString('base64');
     
-    // Determine mime type (default to pdf if not found, since most bulletins are PDFs or images)
     const mimeType = response.headers.get('content-type') || 'application/pdf';
 
     // 2. Call Gemini API
     const model = genAI.getGenerativeModel({ 
-      model: 'gemini-3.5-flash',
+      model: 'gemini-1.5-flash',
       generationConfig: {
         responseMimeType: "application/json"
       }
@@ -42,24 +46,44 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
     const commodityNames = validCommodities.map(c => c.name).join(', ');
 
     const prompt = `
-      You are an expert data extraction assistant. Analyze this Philippine Department of Agriculture "DAILY PRICE INDEX" bulletin and extract the prevailing retail prices.
+      You are an expert data analyst for Philippine agricultural commodities. Analyze this Department of Agriculture (DA) "DAILY PRICE INDEX" bulletin document and extract the prevailing retail prices.
       
-      CRITICAL INSTRUCTIONS:
-      1. Look for the "PREVAILING RETAIL PRICE PER UNIT" column for the prices.
-      2. If a price is listed as "n/a" or missing, skip that commodity entirely.
-      3. You must ONLY extract prices for commodities that map to the following exact names:
-         [${commodityNames}]
-      4. Do not use English translations if our valid name is in Tagalog (e.g. use "Sibuyas Pula" instead of "Red Onions"). Match the commodity concept to our list.
+      TARGET DATABASE COMMODITIES:
+      [${commodityNames}]
       
-      Format your response as a JSON array of objects, using this exact schema:
-      [
-        {
-          "commodity": "Exact Name From List",
-          "price": 120.50
-        }
-      ]
+      COMMODITY MAPPING RULES:
+      - "Red Onion, Local" or "Red Onion, Imported" -> Map to target: "Red Onions"
+      - "White Onion, Local" or "White Onion, Imported" -> Map to target: "White Onions"
+      - "Garlic, Native/Local" or "Garlic, Imported" -> Map to target: "Garlic"
+      - "Ginger, Local" or "Ginger, Imported" -> Map to target: "Ginger"
+      - "White Potato, Local" or "White Potato, Imported" -> Map to target: "Potatoes"
       
-      Return an empty array [] if no matches are found.
+      DISAMBIGUATION & DEDUPLICATION RULES FOR MULTIPLE SUB-TYPES:
+      1. For each target commodity, produce EXACTLY ONE output entry.
+      2. PREFER LOCAL PRODUCE: If a commodity has both "Local" (or "Native") and "Imported" rows with valid numerical prices:
+         - Select the "Local" or "Native" price as the primary prevailing price (e.g. Red Onion, Local @ 107.87).
+      3. FALLBACK TO IMPORTED: If "Local" is "n/a" or missing, use the "Imported (Medium)" price, or the first valid imported price.
+      4. SIZES / SPECIFICATIONS: If multiple sizes (Medium, Large, 13-15 pcs/kg) are listed, pick "Medium" or the first available valid price.
+      5. IGNORE MISSING: If a price is listed as "n/a", ignore that row.
+      
+      DOCUMENT DATE:
+      Extract the official date printed in the document header (e.g. "Wednesday, July 22, 2026") formatted as "YYYY-MM-DD" in the bulletinDate field.
+      
+      EXPECTED JSON OUTPUT FORMAT:
+      Output a strict JSON object containing "bulletinDate" and "extractedPrices" array:
+      {
+        "bulletinDate": "2026-07-22",
+        "extractedPrices": [
+          {
+            "commodity": "Red Onions",
+            "price": 107.87
+          },
+          {
+            "commodity": "White Onions",
+            "price": 103.75
+          }
+        ]
+      }
     `;
 
     const result = await model.generateContent([
@@ -72,97 +96,137 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
       }
     ]);
     
-    const responseText = result.response.text().trim();
+    const rawResponseText = result.response.text().trim();
+    // Strip potential markdown code fences if generated
+    const cleanJsonText = rawResponseText
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/```$/i, '')
+      .trim();
     
     // 3. Parse JSON
-    let extractedData: ExtractedPrice[] = [];
+    let parsedResult: GeminiExtractionResult = { extractedPrices: [] };
     try {
-      extractedData = JSON.parse(responseText);
+      const json = JSON.parse(cleanJsonText);
+      if (Array.isArray(json)) {
+        parsedResult = { extractedPrices: json };
+      } else {
+        parsedResult = json;
+      }
     } catch (parseError) {
-      console.error('[GeminiService] Failed to parse JSON from Gemini:', responseText);
+      console.error('[GeminiService] Failed to parse JSON from Gemini:', rawResponseText);
       throw new Error('Gemini output was not valid JSON');
     }
 
-    if (!Array.isArray(extractedData)) {
-      throw new Error('Gemini output was not a JSON array');
+    const extractedPrices = parsedResult.extractedPrices || [];
+    if (!Array.isArray(extractedPrices)) {
+      throw new Error('Gemini output extractedPrices was not an array');
     }
 
-    // 4. Algorithmic Safeguard Check
-    let isOutlierDetected = false;
-    const safeRecordsToCreate: any[] = [];
+    // Determine observed date from document header or fallback to now
+    let observedDate = new Date();
+    if (parsedResult.bulletinDate) {
+      const parsedDate = new Date(parsedResult.bulletinDate);
+      if (!isNaN(parsedDate.getTime())) {
+        observedDate = parsedDate;
+      }
+    }
 
-    for (const item of extractedData) {
-      if (!item.commodity || typeof item.price !== 'number') continue;
+    // 4. Algorithmic Safeguard & Outlier Detection
+    let isOutlierDetected = false;
+    let outlierReason = '';
+    const recordsToCreate: any[] = [];
+
+    const SYNONYMS: Record<string, string[]> = {
+      'Red Onions': ['red onion', 'red onions', 'sibuyas pula'],
+      'White Onions': ['white onion', 'white onions', 'sibuyas puti'],
+      'Garlic': ['garlic', 'bawang'],
+      'Ginger': ['ginger', 'luya'],
+      'Potatoes': ['potatoes', 'potato', 'white potato', 'patatas'],
+    };
+
+    // Pre-fetch all commodities to prevent N+1 queries inside loop
+    const allCommodities = await prisma.commodity.findMany();
+
+    for (const item of extractedPrices) {
+      if (!item.commodity || typeof item.price !== 'number' || isNaN(item.price)) continue;
       
-      // Find commodity in DB (case insensitive if possible, or exact match)
-      // Note: prisma in postgres is case-sensitive for contains unless we use mode: 'insensitive'
-      // But for simple lookup, we'll try to match name.
-      const commodity = await prisma.commodity.findFirst({
-        where: {
-          name: {
-            contains: item.commodity,
-            mode: 'insensitive'
-          }
-        }
-      });
+      const targetName = item.commodity.trim();
+
+      let commodity = allCommodities.find(c => 
+        c.name.toLowerCase() === targetName.toLowerCase()
+      );
+
+      if (!commodity) {
+        commodity = allCommodities.find(c => {
+          const syns = SYNONYMS[c.name] || [];
+          return syns.some(s => targetName.toLowerCase().includes(s));
+        });
+      }
 
       if (!commodity) {
         console.log(`[GeminiService] Commodity not found in DB: ${item.commodity}, skipping.`);
         continue;
       }
 
-      // Find the latest price for this commodity
+      // Check for 100% price jump/drop vs latest verified baseline
       const latestPriceRecord = await prisma.retailPrice.findFirst({
-        where: { commodityId: commodity.id },
+        where: { commodityId: commodity.id, isVerified: true },
         orderBy: { observedDate: 'desc' }
       });
 
-      if (latestPriceRecord) {
+      const roundedPrice = Number(item.price.toFixed(2));
+
+      if (latestPriceRecord && latestPriceRecord.price > 0) {
         const latestPrice = latestPriceRecord.price;
-        // Check for 100% jump/drop
-        // Math.abs(new - old) / old > 1 (which is 100%)
-        const percentChange = Math.abs(item.price - latestPrice) / latestPrice;
+        const percentChange = Math.abs(roundedPrice - latestPrice) / latestPrice;
         
         if (percentChange > 1) {
-          console.warn(`[GeminiService] Outlier detected for ${commodity.name}! Old: ${latestPrice}, New: ${item.price}`);
           isOutlierDetected = true;
-          // We break or continue based on strategy. We'll mark the whole bulletin as REQUIRES_MANUAL_REVIEW
+          outlierReason = `Significant price shift detected for ${commodity.name}: Previous ₱${latestPrice.toFixed(2)}, Extracted ₱${roundedPrice.toFixed(2)}`;
+          console.warn(`[GeminiService] ${outlierReason}`);
         }
       }
 
-      safeRecordsToCreate.push({
+      recordsToCreate.push({
         commodityId: commodity.id,
         marketId: dynamicMarketId,
-        price: item.price,
-        observedDate: new Date(),
-        sourceBulletinId: bulletinId
+        price: roundedPrice,
+        observedDate: observedDate,
+        sourceBulletinId: bulletinId,
+        isVerified: false
       });
     }
 
-    // 5. Database Update
-    if (isOutlierDetected || safeRecordsToCreate.length === 0) {
-      // Flag bulletin
+    // 5. Database Save & Notification
+    if (recordsToCreate.length > 0) {
+      // Create price records staging (isVerified: false) so Admin can review in Validation tab
+      await prisma.retailPrice.createMany({ data: recordsToCreate });
+    }
+
+    if (isOutlierDetected) {
       await prisma.bulletinRecord.update({
         where: { id: bulletinId },
         data: { processedStatus: 'REQUIRES_MANUAL_REVIEW' }
       });
-      console.log(`[GeminiService] Bulletin ${bulletinId} flagged for manual review.`);
+      // Create an alert for admin dashboard
+      await prisma.adminAlert.create({
+        data: {
+          message: outlierReason,
+          isRead: false
+        }
+      });
+      console.log(`[GeminiService] Bulletin ${bulletinId} processed with warnings. Alert created.`);
     } else {
-      // Save data and mark PROCESSED
-      // Use transaction to ensure data integrity
-      await prisma.$transaction([
-        prisma.retailPrice.createMany({ data: safeRecordsToCreate }),
-        prisma.bulletinRecord.update({
-          where: { id: bulletinId },
-          data: { processedStatus: 'PROCESSED' }
-        })
-      ]);
-      console.log(`[GeminiService] Bulletin ${bulletinId} processed successfully with ${safeRecordsToCreate.length} prices.`);
+      await prisma.bulletinRecord.update({
+        where: { id: bulletinId },
+        data: { processedStatus: 'PROCESSED' }
+      });
+      console.log(`[GeminiService] Bulletin ${bulletinId} processed successfully with ${recordsToCreate.length} prices.`);
     }
 
   } catch (error) {
     console.error(`[GeminiService] Error processing bulletin ${bulletinId}:`, error);
-    // If it completely fails, flag for manual review
     await prisma.bulletinRecord.update({
       where: { id: bulletinId },
       data: { processedStatus: 'REQUIRES_MANUAL_REVIEW' }
