@@ -131,20 +131,41 @@ export default function ProcurementPage() {
                   {isTipsFetching ? (lang === 'tl' ? "Nag-iisip..." : "Thinking...") : (lang === 'tl' ? "Bagong Tips" : "New Tips")}
                 </button>
               </div>
-              <div className="procurement-tips">
+              <div className="flex flex-col gap-3 mt-3">
                 {isTipsLoading ? (
-                  <div className="p-4 text-center text-xs text-muted-foreground bg-muted/50 rounded-xl">
+                  <div className="p-4 text-center text-xs text-muted-foreground bg-muted/50 rounded-xl flex items-center justify-center min-h-[150px]">
+                    <Sparkles size={16} className="animate-spin mr-2 text-amber-500" />
                     {lang === 'tl' ? "Bumubuo ng mga tip mula sa AI..." : "Generating AI tips..."}
                   </div>
-                ) : (aiTips.length > 0 ? aiTips : VENDOR_TIPS).map((tip: any, i: number) => (
-                  <div key={i}>
-                    <span className="text-muted-foreground"><DynamicIcon name={tip.icon} size={20} /></span>
-                    <div>
-                      <strong>{tip.titleEn ? (lang === 'tl' ? tip.title : tip.titleEn) : tip.title}</strong>
-                      <p>{tip.bodyEn ? (lang === 'tl' ? tip.body : tip.bodyEn) : tip.body}</p>
+                ) : (aiTips.length > 0 ? aiTips : VENDOR_TIPS).map((tip: any, i: number) => {
+                  
+                  // Map specific icons to specific colors for visual pop
+                  const getColor = (icon: string) => {
+                    switch(icon) {
+                      case "Flame": case "AlertTriangle": return "text-orange-500 bg-orange-50";
+                      case "CheckCircle": case "TrendingDown": return "text-green-600 bg-green-50";
+                      case "Zap": case "Lightbulb": return "text-yellow-600 bg-yellow-50";
+                      case "MapPin": return "text-blue-500 bg-blue-50";
+                      default: return "text-indigo-500 bg-indigo-50";
+                    }
+                  };
+
+                  return (
+                    <div key={i} className="group flex items-start gap-3.5 bg-card hover:bg-slate-50 transition-all duration-300 rounded-xl px-4 py-4 border border-border/80 shadow-sm hover:shadow-md cursor-default">
+                      <div className={`shrink-0 p-2.5 rounded-full transition-transform duration-300 group-hover:scale-110 ${getColor(tip.icon)}`}>
+                        <DynamicIcon name={tip.icon} size={20} />
+                      </div>
+                      <div className="pt-0.5">
+                        <strong className="block text-sm text-foreground mb-1 font-extrabold tracking-tight">
+                          {tip.titleEn ? (lang === 'tl' ? tip.title : tip.titleEn) : tip.title}
+                        </strong>
+                        <p className="text-[13px] leading-relaxed text-muted-foreground">
+                          {tip.bodyEn ? (lang === 'tl' ? tip.body : tip.bodyEn) : tip.body}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
             </aside>

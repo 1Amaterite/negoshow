@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, TrendingUp, TrendingDown, Minus, ShoppingCart, MapPin, Handshake, Clock, CheckCircle, Eye, Lightbulb, AlertTriangle, HelpCircle } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, Minus, ShoppingCart, MapPin, Handshake, Clock, CheckCircle, Eye, Lightbulb, AlertTriangle, HelpCircle, Flame, Zap } from "lucide-react";
 import { Commodity } from "@/lib/types";
 
 import { useTranslation } from "@/context/LanguageContext";
@@ -17,6 +17,8 @@ export function DynamicIcon({ name, size = 18, className = "" }: { name: string;
     case "Eye": return <Eye size={size} className={className} />;
     case "Lightbulb": return <Lightbulb size={size} className={className} />;
     case "AlertTriangle": return <AlertTriangle size={size} className={className} />;
+    case "Flame": return <Flame size={size} className={className} />;
+    case "Zap": return <Zap size={size} className={className} />;
     default: return <HelpCircle size={size} className={className} />;
   }
 }

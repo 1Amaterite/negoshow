@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+export const dynamic = 'force-dynamic';
 export const maxDuration = 60; // Allow 60s for Gemini API
 
 export async function GET(req: Request) {
@@ -21,25 +22,27 @@ export async function GET(req: Request) {
       take: 5
     });
 
-    // Provide context to Gemini
+    // Provide richer context to Gemini
     const contextStr = commodities.map((c: any) => 
-      `${c.name}: Latest price around ₱${c.retailPrices[0]?.price || 'unknown'} / kg.`
+      `${c.name} (${c.tagalog}): Current price ₱${c.retailPrices[0]?.price || 'unknown'}/kg.`
     ).join("\n");
 
-    const prompt = `You are an expert market analyst and supply chain advisor for market vendors in the Philippines.
-Based on the following current commodity prices:
+    const prompt = `You are a savvy, data-driven market analyst advising market vendors in the Philippines.
+Here is the latest data for key commodities:
 ${contextStr}
 
-Generate exactly 3 short, highly actionable and data-driven quick tips for market vendors to optimize their procurement today. Do not use generic advice, make it sound dynamic.
+Analyze the data and generate exactly 3 highly actionable, specific, and punchy tips for procurement today.
+Do NOT give generic advice. You MUST mention specific commodities and their exact prices in your tips (e.g., "At ₱120/kg, Garlic is a steal right now"). Use an urgent, helpful tone.
+
 Return the result as a raw JSON array of objects (do not wrap in markdown or backticks).
 Each object MUST have:
-"icon": A valid Lucide React icon name (Choose one of: "ShoppingCart", "TrendingDown", "Lightbulb", "MapPin", "Clock", "CheckCircle", "AlertTriangle")
+"icon": A valid Lucide React icon name (Choose one of: "ShoppingCart", "TrendingDown", "Lightbulb", "MapPin", "Clock", "CheckCircle", "AlertTriangle", "Flame", "Zap")
 "title": A short catchy title (max 5 words) in ${lang === 'tl' ? 'Tagalog' : 'English'}
-"body": A brief actionable tip (max 2 sentences) in ${lang === 'tl' ? 'Tagalog' : 'English'}
+"body": A brief actionable tip mentioning exact prices or commodities (max 2 sentences) in ${lang === 'tl' ? 'Tagalog' : 'English'}
 
 Example format:
 [
-  { "icon": "Lightbulb", "title": "Buy Garlic Now", "body": "Garlic prices are low. Stock up for the week." }
+  { "icon": "Flame", "title": "Garlic Prices Dropped!", "body": "Garlic is currently at ₱120/kg. Stock up your inventory now before prices rebound." }
 ]`;
 
     const { GoogleGenerativeAI } = await import("@google/generative-ai");

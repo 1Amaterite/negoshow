@@ -94,15 +94,34 @@ function AdvisorContent() {
             <div className="p-4 text-center text-xs text-muted-foreground bg-card rounded-xl border border-border">
               {lang === 'tl' ? "Bumubuo ng mga tip mula sa AI..." : "Generating AI tips..."}
             </div>
-          ) : (aiTips.length > 0 ? aiTips : VENDOR_TIPS).slice(0,3).map((tip: any, i: number)=>(
-            <div key={i} className="flex items-start gap-3 bg-card rounded-xl px-4 py-3.5 border border-border mb-2">
-              <span className="shrink-0 mt-0.5 text-muted-foreground"><DynamicIcon name={tip.icon} size={20} /></span>
-              <div>
-                <p className="text-sm font-bold text-foreground leading-tight mb-0.5">{tip.titleEn ? (lang === 'tl' ? tip.title : tip.titleEn) : tip.title}</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">{tip.bodyEn ? (lang === 'tl' ? tip.body : tip.bodyEn) : tip.body}</p>
+          ) : (aiTips.length > 0 ? aiTips : VENDOR_TIPS).slice(0,3).map((tip: any, i: number) => {
+            
+            const getColor = (icon: string) => {
+              switch(icon) {
+                case "Flame": case "AlertTriangle": return "text-orange-500 bg-orange-50";
+                case "CheckCircle": case "TrendingDown": return "text-green-600 bg-green-50";
+                case "Zap": case "Lightbulb": return "text-yellow-600 bg-yellow-50";
+                case "MapPin": return "text-blue-500 bg-blue-50";
+                default: return "text-indigo-500 bg-indigo-50";
+              }
+            };
+
+            return (
+              <div key={i} className="group flex items-start gap-3.5 bg-card hover:bg-slate-50 transition-all duration-300 rounded-xl px-4 py-4 border border-border/80 shadow-sm hover:shadow-md cursor-default mb-2.5">
+                <div className={`shrink-0 p-2.5 rounded-full transition-transform duration-300 group-hover:scale-110 ${getColor(tip.icon)}`}>
+                  <DynamicIcon name={tip.icon} size={20} />
+                </div>
+                <div className="pt-0.5">
+                  <strong className="block text-sm text-foreground mb-1 font-extrabold tracking-tight">
+                    {tip.titleEn ? (lang === 'tl' ? tip.title : tip.titleEn) : tip.title}
+                  </strong>
+                  <p className="text-[13px] leading-relaxed text-muted-foreground">
+                    {tip.bodyEn ? (lang === 'tl' ? tip.body : tip.bodyEn) : tip.body}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         <div className="flex items-start gap-2 bg-card rounded-xl px-4 py-3 border border-border">
           <Shield size={14} className="text-primary mt-0.5 shrink-0"/>
