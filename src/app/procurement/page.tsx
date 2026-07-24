@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Navigation, Clock, ChevronRight } from "lucide-react";
+import { Navigation, Clock, ChevronRight, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { VENDOR_TIPS } from "@/lib/constants";
-import { CommodityImage } from "@/components/ui";
+import { CommodityImage, DynamicIcon } from "@/components/ui";
 import { useTranslation } from "@/context/LanguageContext";
 import {
   LineChart, Line, XAxis, YAxis, ResponsiveContainer,
@@ -39,6 +39,22 @@ export default function ProcurementPage() {
     enabled: !!predCId
   });
 
+  const { data: lastUpdateData } = useQuery({
+    queryKey: ['lastUpdate'],
+    queryFn: async () => {
+      const res = await fetch('/api/system/last-update');
+      return await res.json();
+    }
+  });
+
+  const { data: aiTips = [], isLoading: isTipsLoading, refetch: refetchTips, isFetching: isTipsFetching } = useQuery({
+    queryKey: ['ai-tips', lang],
+    queryFn: async () => {
+      const res = await fetch(`/api/advisor/tips?lang=${lang}`);
+      return await res.json();
+    }
+  });
+
   if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading procurement data...</div>;
 
   const totalSavings = dynamicCommodities.reduce((sum: number,c: any)=>sum + Math.max(0,c.baseline-c.sources[0].price)*10,0);
@@ -69,7 +85,7 @@ export default function ProcurementPage() {
           <h1>{t.procurement.title}</h1>
           <p>{t.procurement.subtitle}</p>
         </div>
-        <div className="procurement-date"><Clock size={15}/> {t.procurement.lastUpdate}: {new Date().toLocaleString(lang === 'tl' ? 'tl-PH' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}</div>
+        <div className="procurement-date"><Clock size={15}/> {t.procurement.lastUpdate}: {lastUpdateData ? new Date(lastUpdateData.lastUpdate).toLocaleString(lang === 'tl' ? 'tl-PH' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : "Loading..."}</div>
       </div>
 
       <div className="procurement-tabs">
@@ -107,8 +123,30 @@ export default function ProcurementPage() {
             </section>
 
             <aside className="procurement-panel tips-panel">
-              <div className="panel-heading"><div><h2>{t.procurement.vendorTips.title}</h2><p>{t.procurement.vendorTips.subtitle}</p></div></div>
-              <div className="procurement-tips">{VENDOR_TIPS.map((tip,i)=><div key={i}><span>{tip.icon}</span><div><strong>{lang === 'tl' ? tip.title : tip.titleEn}</strong><p>{lang === 'tl' ? tip.body : tip.bodyEn}</p></div></div>)}</div>
+            <div className="procurement-card">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="mb-0">{t.procurement.dailyTips}</h3>
+                <button onClick={() => refetchTips()} disabled={isTipsFetching} className="flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-full transition-colors disabled:opacity-50">
+                  <Sparkles size={13} className={isTipsFetching ? "animate-spin" : ""} />
+                  {isTipsFetching ? (lang === 'tl' ? "Nag-iisip..." : "Thinking...") : (lang === 'tl' ? "Bagong Tips" : "New Tips")}
+                </button>
+              </div>
+              <div className="procurement-tips">
+                {isTipsLoading ? (
+                  <div className="p-4 text-center text-xs text-muted-foreground bg-muted/50 rounded-xl">
+                    {lang === 'tl' ? "Bumubuo ng mga tip mula sa AI..." : "Generating AI tips..."}
+                  </div>
+                ) : (aiTips.length > 0 ? aiTips : VENDOR_TIPS).map((tip: any, i: number) => (
+                  <div key={i}>
+                    <span className="text-muted-foreground"><DynamicIcon name={tip.icon} size={20} /></span>
+                    <div>
+                      <strong>{tip.titleEn ? (lang === 'tl' ? tip.title : tip.titleEn) : tip.title}</strong>
+                      <p>{tip.bodyEn ? (lang === 'tl' ? tip.body : tip.bodyEn) : tip.body}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
             </aside>
           </div>
         </>}

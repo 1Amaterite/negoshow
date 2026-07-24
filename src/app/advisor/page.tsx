@@ -5,7 +5,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Navigation, Shield } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { VENDOR_TIPS } from "@/lib/constants";
-import { PageHeader, SL, CommodityImage } from "@/components/ui";
+import { Sparkles, CircleDollarSign } from "lucide-react";
+import { PageHeader, SL, CommodityImage, DynamicIcon } from "@/components/ui";
 import { useTranslation } from "@/context/LanguageContext";
 
 function AdvisorContent() {
@@ -24,6 +25,14 @@ function AdvisorContent() {
     }
   });
 
+  const { data: aiTips = [], isLoading: isTipsLoading, refetch: refetchTips, isFetching: isTipsFetching } = useQuery({
+    queryKey: ['ai-tips', lang],
+    queryFn: async () => {
+      const res = await fetch(`/api/advisor/tips?lang=${lang}`);
+      return await res.json();
+    }
+  });
+
   const commodity = dynamicCommodities.find((c: any) => c.id === id) || dynamicCommodities[0];
   const quotedPrice = quote ? parseFloat(quote) : 0;
 
@@ -34,9 +43,9 @@ function AdvisorContent() {
   const action = isFlagged ? "negotiate" : commodity.trend === "up" ? "monitor" : "buy";
   
   const cards = {
-    buy:       { label: t.advisor.buyNow,   color:"bg-green-600", emoji:"✅", desc: t.advisor.buyNowDesc },
-    negotiate: { label: t.advisor.negotiate,  color:"bg-amber-600", emoji:"🤝", desc: t.advisor.negotiateDesc },
-    monitor:   { label: t.advisor.monitor,      color:"bg-blue-600",  emoji:"👀", desc: t.advisor.monitorDesc },
+    buy:       { label: t.advisor.buyNow,   color:"bg-green-600", icon:"CheckCircle", desc: t.advisor.buyNowDesc },
+    negotiate: { label: t.advisor.negotiate,  color:"bg-amber-600", icon:"Handshake", desc: t.advisor.negotiateDesc },
+    monitor:   { label: t.advisor.monitor,      color:"bg-blue-600",  icon:"Eye", desc: t.advisor.monitorDesc },
   };
   
   const card = cards[action];
@@ -53,7 +62,7 @@ function AdvisorContent() {
           </div>
         </div>
         <div className={`${card.color} rounded-2xl p-5 text-white`}>
-          <p className="text-3xl mb-2">{card.emoji}</p>
+          <DynamicIcon name={card.icon} size={32} className="mb-3" />
           <p className="text-xs uppercase tracking-widest text-white/70 mb-1 font-semibold">{t.advisor.recommended}</p>
           <p className="text-2xl font-extrabold mb-2">{card.label}</p>
           <p className="text-sm text-white/80 leading-relaxed">{card.desc}</p>
@@ -68,19 +77,29 @@ function AdvisorContent() {
             <p className="text-xs text-muted-foreground flex items-center gap-1"><Shield size={11}/>{t.advisor.verifiedSource}</p>
             {quotedPrice>0&&(
               <div className="mt-3 bg-white/70 rounded-lg px-3 py-2 border border-green-200">
-                <p className="text-xs font-semibold text-green-800">💰 {t.advisor.savePer10kg.replace('{{amt}}', ((quotedPrice-cheapest.price)*10).toFixed(0))}</p>
+                <p className="text-xs font-semibold text-green-800 flex items-center gap-1.5"><CircleDollarSign size={14} className="text-green-700"/> {t.advisor.savePer10kg.replace('{{amt}}', ((quotedPrice-cheapest.price)*10).toFixed(0))}</p>
               </div>
             )}
           </div>
         </div>
         <div>
-          <SL>{t.advisor.vendorTips}</SL>
-          {VENDOR_TIPS.slice(0,2).map((tip,i)=>(
+          <div className="flex items-center justify-between mb-3">
+            <SL className="mb-0">{t.advisor.vendorTips}</SL>
+            <button onClick={() => refetchTips()} disabled={isTipsFetching} className="flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-full transition-colors disabled:opacity-50">
+              <Sparkles size={12} className={isTipsFetching ? "animate-spin" : ""} />
+              {isTipsFetching ? (lang === 'tl' ? "Nag-iisip..." : "Thinking...") : (lang === 'tl' ? "Bagong Tips" : "New Tips")}
+            </button>
+          </div>
+          {isTipsLoading ? (
+            <div className="p-4 text-center text-xs text-muted-foreground bg-card rounded-xl border border-border">
+              {lang === 'tl' ? "Bumubuo ng mga tip mula sa AI..." : "Generating AI tips..."}
+            </div>
+          ) : (aiTips.length > 0 ? aiTips : VENDOR_TIPS).slice(0,3).map((tip: any, i: number)=>(
             <div key={i} className="flex items-start gap-3 bg-card rounded-xl px-4 py-3.5 border border-border mb-2">
-              <span className="text-xl shrink-0 mt-0.5">{tip.icon}</span>
+              <span className="shrink-0 mt-0.5 text-muted-foreground"><DynamicIcon name={tip.icon} size={20} /></span>
               <div>
-                <p className="text-sm font-bold text-foreground leading-tight mb-0.5">{lang === 'tl' ? tip.title : tip.titleEn || tip.title}</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">{lang === 'tl' ? tip.body : tip.bodyEn || tip.body}</p>
+                <p className="text-sm font-bold text-foreground leading-tight mb-0.5">{tip.titleEn ? (lang === 'tl' ? tip.title : tip.titleEn) : tip.title}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">{tip.bodyEn ? (lang === 'tl' ? tip.body : tip.bodyEn) : tip.body}</p>
               </div>
             </div>
           ))}

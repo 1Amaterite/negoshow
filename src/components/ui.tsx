@@ -2,10 +2,24 @@
 
 import React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, Minus, ShoppingCart, MapPin, Handshake, Clock, CheckCircle, Eye, Lightbulb, AlertTriangle, HelpCircle } from "lucide-react";
 import { Commodity } from "@/lib/types";
 
 import { useTranslation } from "@/context/LanguageContext";
+
+export function DynamicIcon({ name, size = 18, className = "" }: { name: string; size?: number; className?: string }) {
+  switch (name) {
+    case "ShoppingCart": return <ShoppingCart size={size} className={className} />;
+    case "MapPin": return <MapPin size={size} className={className} />;
+    case "Handshake": return <Handshake size={size} className={className} />;
+    case "Clock": return <Clock size={size} className={className} />;
+    case "CheckCircle": return <CheckCircle size={size} className={className} />;
+    case "Eye": return <Eye size={size} className={className} />;
+    case "Lightbulb": return <Lightbulb size={size} className={className} />;
+    case "AlertTriangle": return <AlertTriangle size={size} className={className} />;
+    default: return <HelpCircle size={size} className={className} />;
+  }
+}
 
 export function KalagayanChip({ volatility }: { volatility: string }) {
   const { t } = useTranslation();
@@ -92,8 +106,8 @@ export function PageHeader({
   );
 }
 
-export function SL({ children }: { children: React.ReactNode }) {
-  return <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2">{children}</p>;
+export function SL({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  return <h3 className={`text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-3 ${className}`}>{children}</h3>;
 }
 
 export function CommodityImage({

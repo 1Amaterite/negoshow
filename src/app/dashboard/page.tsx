@@ -13,7 +13,7 @@ import {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   
   const [predCId, setPredCId] = useState<string | null>(null);
   const [timeframe, setTimeframe] = useState<"7" | "30">("30");
@@ -38,10 +38,18 @@ export default function DashboardPage() {
     enabled: !!predCId
   });
 
+  const { data: lastUpdateData } = useQuery({
+    queryKey: ['lastUpdate'],
+    queryFn: async () => {
+      const res = await fetch('/api/system/last-update');
+      return await res.json();
+    }
+  });
+
   const VARIANCE_DATA = dynamicCommodities.map((c: any) => ({
     name: c.shortLabel,
-    "30-Araw na Karaniwan": c.baseline30d,
-    "Kasalukuyan": c.baseline,
+    [t.dashboard.baseline30d]: c.baseline30d,
+    [t.dashboard.current]: c.baseline,
     variancePct: parseFloat(c.change.toFixed(1)),
   }));
 
@@ -63,8 +71,8 @@ export default function DashboardPage() {
 
   const PredTip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
-    const a = payload.find((p:any) => p.name === "Aktwal na Presyo");
-    const h = payload.find((p:any) => p.name === "Hinulaang Presyo");
+    const a = payload.find((p:any) => p.dataKey === "aktwal");
+    const h = payload.find((p:any) => p.dataKey === "hula");
     return (
       <div className="bg-background border border-border rounded-xl px-3 py-2 shadow-lg text-xs">
         <p className="font-bold text-foreground mb-1">{label}</p>
@@ -115,14 +123,14 @@ export default function DashboardPage() {
 
           <SL>{t.dashboard.currentBaselineSummary}</SL>
           <div className="rounded-2xl border border-border overflow-hidden bg-card shadow-sm">
-            <div className="grid grid-cols-[1fr_60px_76px_60px] bg-muted px-3 py-2 border-b border-border">
+            <div className="grid grid-cols-[1fr_60px_76px_60px] md:grid-cols-[1fr_60px_80px_70px] md:gap-3 bg-muted px-3 py-2 border-b border-border">
               {[t.dashboard.commodity, t.dashboard.price, t.dashboard.trend, t.dashboard.status].map((h)=>(
                 <p key={h} className={`text-[10px] font-bold uppercase tracking-wide text-muted-foreground ${h!==t.dashboard.commodity?"text-right":""}`}>{h}</p>
               ))}
             </div>
             {dynamicCommodities.map((c: any,i: number)=>(
               <button key={c.id} onClick={() => router.push(`/commodity/${c.id}`)}
-                className={`w-full grid grid-cols-[1fr_60px_76px_60px] items-center px-3 py-3 border-b border-border last:border-0 active:bg-muted transition-colors text-left ${i%2===0?"":"bg-card/40"}`}>
+                className={`w-full grid grid-cols-[1fr_60px_76px_60px] md:grid-cols-[1fr_60px_80px_70px] md:gap-3 items-center px-3 py-3 border-b border-border last:border-0 hover:bg-muted active:scale-[0.99] transition-all text-left ${i%2===0?"":"bg-card/40"}`}>
                 <div className="flex items-center gap-2 min-w-0">
                   <CommodityImage commodity={c} size="sm"/>
                   <div className="min-w-0">
@@ -158,8 +166,8 @@ export default function DashboardPage() {
                   <XAxis dataKey="name" tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false}/>
                   <YAxis tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false} width={45} tickFormatter={(v: any)=>`₱${new Intl.NumberFormat('en-US').format(v)}`} domain={[0,"auto"]}/>
                   <Tooltip content={<VarTip/>}/>
-                  <Bar dataKey="30-Araw na Karaniwan" fill="#c8a97a" radius={[4,4,0,0]}/>
-                  <Bar dataKey="Kasalukuyan" radius={[4,4,0,0]}>
+                  <Bar dataKey={t.dashboard.baseline30d} fill="#c8a97a" radius={[3,3,0,0]}/>
+                  <Bar dataKey={t.dashboard.current} radius={[3,3,0,0]}>
                     {VARIANCE_DATA.map((d: any,i: number)=><Cell key={i} fill={d.variancePct>10?"#c62828":d.variancePct<-10?"#2d5a27":"#154212"}/>)}
                   </Bar>
                 </BarChart>
@@ -174,7 +182,7 @@ export default function DashboardPage() {
                   <div>
                     <p className="text-xs font-bold text-foreground">{d.name}</p>
                     <p className={`text-[10px] font-semibold ${hi?"text-red-600":"text-green-700"}`}>
-                      {hi?t.dashboard.higherThan30.replace('{{amt}}', (d["Kasalukuyan"]-d["30-Araw na Karaniwan"]).toFixed(1)) : t.dashboard.lowerThan30.replace('{{amt}}', (d["30-Araw na Karaniwan"]-d["Kasalukuyan"]).toFixed(1))}
+                      {hi?t.dashboard.higherThan30.replace('{{amt}}', (d[t.dashboard.current]-d[t.dashboard.baseline30d]).toFixed(1)) : t.dashboard.lowerThan30.replace('{{amt}}', (d[t.dashboard.baseline30d]-d[t.dashboard.current]).toFixed(1))}
                     </p>
                   </div>
                   <span className={`text-base font-extrabold ${hi?"text-red-600":"text-green-700"}`}>{hi?"+":""}{d.variancePct}%</span>
@@ -194,11 +202,11 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          <div className="flex gap-1.5 mb-3 mt-2 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="flex overflow-x-auto pb-2 -mx-5 px-5 md:mx-0 md:px-0 gap-2 mb-4 scrollbar-hide">
             {dynamicCommodities.map((c: any)=>(
               <button key={c.id} onClick={()=>setPredCId(c.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border whitespace-nowrap transition-colors shrink-0 ${
-                  predC?.id===c.id?"bg-primary text-white border-primary":"bg-card border-border text-foreground"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border whitespace-nowrap transition-all shrink-0 hover:shadow-sm active:scale-95 ${
+                  predC?.id===c.id?"bg-primary text-white border-primary":"bg-card border-border hover:bg-muted/50 text-foreground"
                 }`}><CommodityImage commodity={c} size="sm" className="!w-6 !h-6 !rounded-md"/>{c.shortLabel}</button>
             ))}
           </div>
@@ -253,7 +261,7 @@ export default function DashboardPage() {
 
         <div className="dashboard-updated flex items-center gap-2 bg-card rounded-xl px-4 py-3 border border-border mt-8">
           <Clock size={14} className="text-muted-foreground"/>
-          <p className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{t.dashboard.lastUpdate}:</span> {new Date().toLocaleDateString()} · DA Bulletin</p>
+          <p className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{t.dashboard.lastUpdate}:</span> {lastUpdateData ? new Date(lastUpdateData.lastUpdate).toLocaleString(lang === 'tl' ? 'tl-PH' : 'en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : "Loading..."} · DA Bulletin</p>
         </div>
       </div>
     </div>

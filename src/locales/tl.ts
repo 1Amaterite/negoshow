@@ -48,7 +48,7 @@ export const tl: TranslationKeys = {
     currentBaseline: "Kasalukuyang Baseline",
     difference: "Pagkakaiba",
     cheaperSource: "Mas Murang Malapit na Source",
-    saveMoney: "💰 Makatitipid ka ng ₱{amt}/kg doon",
+    saveMoney: "Makatitipid ka ng ₱{amt}/kg doon",
     source: "Source",
     viewActionBtn: "Tingnan ang Inirerekomendang Hakbang",
     checkAgainBtn: "Suriin Muli",
@@ -86,6 +86,7 @@ export const tl: TranslationKeys = {
     compareSuppliers: "Ihambing ang presyo ng mga supplier, suriin ang mga rekomendasyon, at alamin kung saan pinakamura ang bawat kalakal.",
     openProcurement: "Buksan ang Sentro ng Pagbili",
     lastUpdate: "Huling update",
+    baseline30d: "30-Araw na Karaniwan",
   },
   procurement: {
     lastUpdate: "Huling update",
@@ -98,15 +99,16 @@ export const tl: TranslationKeys = {
       recommendations: "Mga Rekomendasyon"
     },
     kpis: {
-      savings: "Posibleng matipid",
+      savings: "Potensyal na tipid",
       savingsDesc: "sa bawat 10 kg ng bawat kalakal",
       buyNow: "Handa nang bilhin",
       buyNowDesc: "matatag o bumababang presyo",
-      markets: "Mga palengke na inihambing",
+      markets: "Mga pinaghambing na merkado",
       marketsDesc: "malalapit at beripikadong pinagmulan",
       volatile: "Mga lubhang pabago-bagong kalakal",
-      volatileDesc: "kailangang masusing bantayan"
+      volatileDesc: "pabago-bago ang presyo ng mga kalakal ngayon"
     },
+    dailyTips: "Araw-araw na Tips",
     todayPlan: {
       title: "Plano sa Pagbili Ngayong Araw",
       subtitle: "Mga pangunahing hakbang batay sa galaw ng presyo at paghahambing ng mga supplier.",

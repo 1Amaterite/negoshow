@@ -46,7 +46,7 @@ export const en = {
     currentBaseline: "Current Baseline",
     difference: "Difference",
     cheaperSource: "Cheaper Nearby Source",
-    saveMoney: "💰 You can save ₱{amt}/kg there",
+    saveMoney: "You can save ₱{amt}/kg there",
     source: "Source",
     viewActionBtn: "View Recommended Actions",
     checkAgainBtn: "Check Again",
@@ -84,6 +84,7 @@ export const en = {
     compareSuppliers: "Compare supplier prices, review recommendations, and know where each commodity is cheapest.",
     openProcurement: "Open Procurement Center",
     lastUpdate: "Last update",
+    baseline30d: "30-Day Baseline",
   },
   procurement: {
     lastUpdate: "Last update",
@@ -101,10 +102,11 @@ export const en = {
       buyNow: "Ready to buy",
       buyNowDesc: "stable or decreasing prices",
       markets: "Markets compared",
-      marketsDesc: "nearby and verified sources",
+      marketsDesc: "nearby verified sources",
       volatile: "Highly volatile commodities",
       volatileDesc: "needs close monitoring"
     },
+    dailyTips: "Daily Vendor Tips",
     todayPlan: {
       title: "Today's Buying Plan",
       subtitle: "Key actions based on price trends and supplier comparison.",
