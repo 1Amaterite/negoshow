@@ -123,15 +123,15 @@ export default function ProcurementPage() {
             </section>
 
             <aside className="procurement-panel tips-panel">
-            <div className="procurement-card">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="mb-0">{t.procurement.dailyTips}</h3>
-                <button onClick={() => refetchTips()} disabled={isTipsFetching} className="flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-full transition-colors disabled:opacity-50">
+            <div className="p-5 md:p-6">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="mb-0 text-lg font-extrabold text-foreground tracking-tight">{t.procurement.dailyTips}</h3>
+                <button onClick={() => refetchTips()} disabled={isTipsFetching} className="flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-100 px-3 py-1.5 rounded-full transition-colors disabled:opacity-50">
                   <Sparkles size={13} className={isTipsFetching ? "animate-spin" : ""} />
                   {isTipsFetching ? (lang === 'tl' ? "Nag-iisip..." : "Thinking...") : (lang === 'tl' ? "Bagong Tips" : "New Tips")}
                 </button>
               </div>
-              <div className="flex flex-col gap-3 mt-3">
+              <div className="flex flex-col gap-2 mt-2">
                 {isTipsLoading ? (
                   <div className="p-4 text-center text-xs text-muted-foreground bg-muted/50 rounded-xl flex items-center justify-center min-h-[150px]">
                     <Sparkles size={16} className="animate-spin mr-2 text-amber-500" />
