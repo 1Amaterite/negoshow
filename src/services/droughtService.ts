@@ -5,7 +5,7 @@ export async function checkDataDrought() {
   
   // Find the latest official (non-proxy) RetailPrice
   const latestPrice = await prisma.retailPrice.findFirst({
-    where: { isProxy: false },
+    where: { isProxy: false, isVerified: true },
     orderBy: { observedDate: 'desc' }
   });
 
@@ -73,7 +73,9 @@ export async function triggerProxyIngestion() {
         marketId: oldPrice.marketId,
         price: syntheticPrice,
         observedDate: now,
-        isProxy: true
+        isProxy: true,
+        isVerified: true,
+        validationStatus: 'approved'
       });
     }
   }

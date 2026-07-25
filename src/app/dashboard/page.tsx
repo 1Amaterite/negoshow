@@ -25,7 +25,8 @@ export default function DashboardPage() {
       const data = await res.json();
       if (!predCId && data.length > 0) setPredCId(data[0].id);
       return data;
-    }
+    },
+    staleTime: 300000
   });
 
   const { data: predData = [], isLoading: isPredLoading } = useQuery({
@@ -35,7 +36,8 @@ export default function DashboardPage() {
       const res = await fetch(`/api/analytics/trend?commodityId=${predCId}&days=${timeframe}`);
       return await res.json();
     },
-    enabled: !!predCId
+    enabled: !!predCId,
+    staleTime: 300000
   });
 
   const { data: lastUpdateData } = useQuery({
@@ -43,7 +45,8 @@ export default function DashboardPage() {
     queryFn: async () => {
       const res = await fetch('/api/system/last-update');
       return await res.json();
-    }
+    },
+    staleTime: 300000
   });
 
   const VARIANCE_DATA = dynamicCommodities.map((c: any) => ({

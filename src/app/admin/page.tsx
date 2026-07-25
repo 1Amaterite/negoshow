@@ -55,6 +55,7 @@ export default function AdminPage() {
   const [done, setDone] = useState<any[]>([]); // To hold approved/rejected logs if desired
   const [uploads, setUploads] = useState<UploadedDoc[]>([]);
   const [alerts, setAlerts] = useState<any[]>([]);
+  const dismissedPendingAlert = useRef(false);
 
   // Upload form state
   const [sourceOffice, setSourceOffice] = useState("");
@@ -82,7 +83,7 @@ export default function AdminPage() {
       const json = await res.json();
       if (json.data) {
         setRecords(json.data);
-        if (json.data.length > 0) {
+        if (json.data.length > 0 && !dismissedPendingAlert.current) {
           setAlerts(prev => {
             if (prev.some(a => a.id === 'pending-validation')) return prev;
             return [...prev, {
@@ -92,6 +93,9 @@ export default function AdminPage() {
             }];
           });
         }
+      }
+      if (json.logs) {
+        setDone(json.logs);
       }
     } catch(e) {}
   };
@@ -109,7 +113,7 @@ export default function AdminPage() {
           coverage: b.location || "Metro Manila",
           docType: b.type === "IMG" ? "Image" : "PDF",
           commodities: b.commodities || ["Lahat ng Gulay"],
-          status: b.status === "PROCESSED" ? "published" : (b.status === "PENDING" ? "processing" : (b.status === "REQUIRES_MANUAL_REVIEW" ? "failed" : "validated")),
+          status: b.status === "PROCESSED" ? "published" : (b.status === "PENDING" || b.status === "PENDING_VALIDATION" ? "processing" : (b.status === "VALIDATED" ? "validated" : "failed")),
           uploadedAt: b.date || new Date().toLocaleString("en-PH",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}),
         }));
         setUploads(mapped);
@@ -129,7 +133,9 @@ export default function AdminPage() {
 
   const dismissAlert = async (id: number | string) => {
     setAlerts(p => p.filter(a => a.id !== id));
-    if (typeof id === 'number') {
+    if (id === 'pending-validation') {
+      dismissedPendingAlert.current = true;
+    } else if (typeof id === 'number') {
       await fetch('/api/alerts', { method: 'POST', body: JSON.stringify({ id }) });
     }
   };
@@ -151,6 +157,11 @@ export default function AdminPage() {
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
+      formData.append("sourceOffice", sourceOffice);
+      formData.append("bulletinDate", bulletinDate);
+      formData.append("coverage", coverage);
+      formData.append("docType", docType);
+      formData.append("commodities", JSON.stringify(selectedComms));
       
       const res = await fetch("/api/upload-bulletin", {
         method: "POST",
@@ -221,23 +232,30 @@ export default function AdminPage() {
     }
   };
   const updateRec = async (id: number, status: "approved"|"rejected") => {
+    // 1. Optimistic UI update
+    const rec = records.find(r => r.id === id);
+    if (rec) {
+      setRecords(p => p.filter(r => r.id !== id));
+      setDone(p => [{ ...rec, validationStatus: status }, ...p]);
+    }
+
     try {
+      // 2. Network Request
       await fetch('/api/admin/validation', {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, action: status })
       });
-      // Move from pending (records) to done
-      const rec = records.find(r => r.id === id);
-      if (rec) {
-        setDone(p => [{ ...rec, status }, ...p]);
-        setRecords(p => p.filter(r => r.id !== id));
-      }
+      // 3. Re-fetch uploads in case the bulletin transitioned to VALIDATED
+      fetchUploads();
     } catch (e) {
       console.error(e);
       alert('Failed to update record');
+      // 4. Rollback Optimistic UI on failure
+      if (rec) {
+        setDone(p => p.filter(r => r.id !== id));
+        setRecords(p => [rec, ...p]);
+      }
     }
   };
 
@@ -498,7 +516,14 @@ export default function AdminPage() {
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
                           <p className="text-sm font-bold text-foreground">{r.commodity?.name}</p>
-                          <p className="text-xs text-muted-foreground">{r.market?.name} · {new Date(r.observedDate).toLocaleDateString()}</p>
+                          <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
+                            <p className="text-xs text-muted-foreground">{r.market?.name} · {new Date(r.observedDate).toLocaleDateString()}</p>
+                            {r.confidenceScore && (
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${r.confidenceScore < 90 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
+                                {r.confidenceScore}% AI Confidence
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <p className={`text-lg font-extrabold shrink-0 ${r.isFlagged?"text-amber-700":(r.isProxy?"text-blue-700":"text-foreground")}`}>₱{Number(r.price).toFixed(2)}</p>
                       </div>
@@ -529,7 +554,7 @@ export default function AdminPage() {
           <div className="bg-card rounded-xl border border-border px-4 py-3 flex items-start gap-2">
             <Info size={13} className="text-primary mt-0.5 shrink-0"/>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              {lang === "en" ? "This tab shows your validation logs for the current session." : "Ipinapakita ng tab na ito ang iyong mga validation log para sa kasalukuyang session."}
+              {lang === "en" ? "This tab shows a historical log of your price validation decisions." : "Ipinapakita ng tab na ito ang log ng kasaysayan ng iyong mga desisyon sa pag-validate."}
             </p>
           </div>
 
@@ -543,8 +568,8 @@ export default function AdminPage() {
                       <p className="text-sm font-semibold text-foreground">{r.commodity?.name} — ₱{Number(r.price).toFixed(2)}</p>
                       <p className="text-xs text-muted-foreground">{r.market?.name} · {new Date(r.observedDate).toLocaleDateString()}</p>
                     </div>
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${r.status==="approved"?"bg-green-100 text-green-700 border-green-200":"bg-red-100 text-red-700 border-red-200"}`}>
-                      {r.status==="approved"?t.admin.validate.statusApproved:t.admin.validate.statusRejected}
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${r.validationStatus==="approved"?"bg-green-100 text-green-700 border-green-200":"bg-red-100 text-red-700 border-red-200"}`}>
+                      {r.validationStatus==="approved"?t.admin.validate.statusApproved:t.admin.validate.statusRejected}
                     </span>
                   </div>
                 ))}

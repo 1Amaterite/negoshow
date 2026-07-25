@@ -9,7 +9,10 @@ export async function GET(req: Request) {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const retailPrices = await prisma.retailPrice.findMany({
-      where: { observedDate: { gte: thirtyDaysAgo } },
+      where: { 
+        observedDate: { gte: thirtyDaysAgo },
+        isVerified: true
+      },
       include: { commodity: true, market: true },
       orderBy: { observedDate: 'desc' }
     });

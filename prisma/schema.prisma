@@ -15,6 +15,8 @@ enum Decision {
 
 enum BulletinStatus {
   PENDING
+  PENDING_VALIDATION
+  VALIDATED
   PROCESSED
   REQUIRES_MANUAL_REVIEW
 }
@@ -57,13 +59,16 @@ model RetailPrice {
   confidenceScore  Float?
   isFlagged        Boolean  @default(false)
   flagReason       String?
+  validationStatus String   @default("pending")
   createdAt        DateTime @default(now())
 
   commodity      Commodity       @relation(fields: [commodityId], references: [id])
   market         Market          @relation(fields: [marketId], references: [id])
-  sourceBulletin BulletinRecord? @relation(fields: [sourceBulletinId], references: [id])
+  sourceBulletin BulletinRecord? @relation(fields: [sourceBulletinId], references: [id], onDelete: Cascade)
 
   @@index([commodityId, observedDate])
+  @@index([commodityId, marketId])
+  @@index([isVerified, observedDate(sort: Desc)])
 }
 
 model VendorCheck {
@@ -86,6 +91,11 @@ model BulletinRecord {
   fileUrl         String
   uploadDate      DateTime       @default(now())
   processedStatus BulletinStatus @default(PENDING)
+  sourceOffice    String?
+  bulletinDate    String?
+  coverage        String?
+  docType         String?
+  commodities     String[]
 
   retailPrices RetailPrice[]
 }

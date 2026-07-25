@@ -16,6 +16,7 @@ export async function GET(req: Request) {
         where: { name: { contains: commodityIdStr.replace('-', ' '), mode: 'insensitive' } },
         include: {
             retailPrices: {
+                where: { isVerified: true },
                 orderBy: { observedDate: 'desc' },
                 take: 1
             },

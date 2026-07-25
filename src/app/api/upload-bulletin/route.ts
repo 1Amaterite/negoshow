@@ -21,6 +21,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
+    const sourceOffice = formData.get('sourceOffice') as string || null;
+    const bulletinDate = formData.get('bulletinDate') as string || null;
+    const coverage = formData.get('coverage') as string || null;
+    const docType = formData.get('docType') as string || null;
+    const commoditiesStr = formData.get('commodities') as string;
+    
+    let commodities: string[] = [];
+    if (commoditiesStr) {
+      try { commodities = JSON.parse(commoditiesStr); } catch(e){}
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
     const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
     const uniqueFileName = `${Date.now()}-${sanitizedFileName}`;
@@ -43,13 +54,32 @@ export async function POST(request: Request) {
       .getPublicUrl(uploadData.path);
 
     // Save record to Prisma database
-    const newBulletin = await prisma.bulletinRecord.create({
-      data: {
-        fileUrl: publicUrl,
-        // The processedStatus will default to 'PENDING'
-        // The uploadDate will default to now()
-      },
-    });
+    let newBulletin;
+    try {
+      newBulletin = await prisma.bulletinRecord.create({
+        data: {
+          fileUrl: publicUrl,
+          sourceOffice,
+          bulletinDate,
+          coverage,
+          docType,
+          commodities
+        },
+      });
+    } catch (dbError) {
+      console.error('Database error during bulletin creation:', dbError);
+      
+      // ROLLBACK: Remove the orphaned file from Supabase storage
+      const { error: removeError } = await supabase.storage
+        .from('bulletins')
+        .remove([uploadData.path]);
+        
+      if (removeError) {
+        console.error('Failed to cleanup orphaned file in Supabase:', removeError);
+      }
+      
+      return NextResponse.json({ error: 'Database error. Upload rolled back.' }, { status: 500 });
+    }
 
     // Fire off the AI processing
     try {

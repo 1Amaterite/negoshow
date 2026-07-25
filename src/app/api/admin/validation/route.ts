@@ -11,7 +11,7 @@ export async function GET(request: Request) {
     }
 
     const pendingPrices = await prisma.retailPrice.findMany({
-      where: { isVerified: false },
+      where: { validationStatus: 'pending' },
       include: {
         commodity: true,
         market: true,
@@ -19,8 +19,21 @@ export async function GET(request: Request) {
       },
       orderBy: { createdAt: 'desc' }
     });
-    return NextResponse.json({ data: pendingPrices });
+
+    const logPrices = await prisma.retailPrice.findMany({
+      where: { validationStatus: { not: 'pending' } },
+      include: {
+        commodity: true,
+        market: true,
+        sourceBulletin: true
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 100
+    });
+
+    return NextResponse.json({ data: pendingPrices, logs: logPrices });
   } catch (error: any) {
+    console.error(error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -34,20 +47,38 @@ export async function PATCH(request: Request) {
 
     const { id, action } = await request.json(); // action can be 'approve' or 'reject'
     
+    let updatedRecord;
     if (action === 'approve' || action === 'approved') {
-      const updated = await prisma.retailPrice.update({
+      updatedRecord = await prisma.retailPrice.update({
         where: { id },
-        data: { isVerified: true }
+        data: { isVerified: true, validationStatus: 'approved' }
       });
-      return NextResponse.json({ success: true, data: updated });
     } else if (action === 'reject' || action === 'rejected') {
-      await prisma.retailPrice.delete({
-        where: { id }
+      updatedRecord = await prisma.retailPrice.update({
+        where: { id },
+        data: { isVerified: false, validationStatus: 'rejected' }
       });
-      return NextResponse.json({ success: true });
+    } else {
+      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
-    return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+    if (updatedRecord.sourceBulletinId) {
+      const remainingPending = await prisma.retailPrice.count({
+        where: {
+          sourceBulletinId: updatedRecord.sourceBulletinId,
+          validationStatus: 'pending'
+        }
+      });
+
+      if (remainingPending === 0) {
+        await prisma.bulletinRecord.update({
+          where: { id: updatedRecord.sourceBulletinId },
+          data: { processedStatus: 'VALIDATED' }
+        });
+      }
+    }
+
+    return NextResponse.json({ success: true, data: updatedRecord });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

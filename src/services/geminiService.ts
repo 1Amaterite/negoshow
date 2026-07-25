@@ -282,7 +282,7 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
     } else {
       await prisma.bulletinRecord.update({
         where: { id: bulletinId },
-        data: { processedStatus: 'PROCESSED' }
+        data: { processedStatus: 'PENDING_VALIDATION' }
       });
       console.log(`[GeminiService] Bulletin ${bulletinId} processed successfully with ${recordsToCreate.length} prices.`);
     }

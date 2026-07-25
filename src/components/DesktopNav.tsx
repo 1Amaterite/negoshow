@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useTranslation } from "@/context/LanguageContext";
 import { LanguageToggle } from "./LanguageToggle";
@@ -20,8 +21,8 @@ export function DesktopNav() {
   return (
     <header className="hidden md:block sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
       <div className="w-full px-8 lg:px-12 h-20 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3 text-left">
-          <img src="/images/negoshow-logo.svg" alt="NegoShow Talipapa Utility" className="h-12 w-auto" />
+        <Link href="/" className="flex items-center gap-3">
+          <Image src="/images/negoshow-logo.svg" alt="NegoShow Talipapa Utility" width={48} height={48} className="h-12 w-auto" />
         </Link>
         <nav className="flex items-center gap-1" aria-label="Main navigation">
           {links.map((link) => (

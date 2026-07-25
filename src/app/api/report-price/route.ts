@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+const ipMap = new Map<string, number>();
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -12,9 +14,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    // IP Rate Limiting
+    const ip = req.headers.get('x-forwarded-for') || 'unknown';
+    const now = Date.now();
+    if (ipMap.has(ip) && now - ipMap.get(ip)! < 10000) {
+      return NextResponse.json({ error: "Too many requests. Please wait 10 seconds." }, { status: 429 });
+    }
+    ipMap.set(ip, now);
+
     // Anti-Spam Safeguard: Fetch the current baseline
     const latestBaseline = await prisma.retailPrice.findFirst({
-      where: { commodityId, marketId },
+      where: { commodityId, marketId, isVerified: true },
       orderBy: { observedDate: 'desc' }
     });
 

@@ -8,6 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     const latestBulletin = await prisma.bulletinRecord.findFirst({
+      where: { processedStatus: 'PROCESSED' },
       orderBy: { uploadDate: 'desc' }
     });
     
@@ -17,6 +18,7 @@ export async function GET() {
     
     // Fallback if no bulletins yet
     const latestRetail = await prisma.retailPrice.findFirst({
+      where: { isVerified: true },
       orderBy: { observedDate: 'desc' }
     });
     

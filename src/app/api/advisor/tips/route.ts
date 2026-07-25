@@ -15,6 +15,7 @@ export async function GET(req: Request) {
     const commodities = await prisma.commodity.findMany({
       include: {
         retailPrices: {
+          where: { isVerified: true },
           orderBy: { observedDate: 'desc' },
           take: 5
         }

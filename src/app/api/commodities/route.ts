@@ -8,6 +8,7 @@ export async function GET() {
     const commodities = await prisma.commodity.findMany({
       include: {
         retailPrices: {
+          where: { isVerified: true },
           orderBy: { observedDate: 'desc' },
           take: 30, // Get last 30 days to calculate baseline/30d
           include: { market: true }

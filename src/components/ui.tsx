@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, TrendingUp, TrendingDown, Minus, ShoppingCart, MapPin, Handshake, Clock, CheckCircle, Eye, Lightbulb, AlertTriangle, HelpCircle, Flame, Zap } from "lucide-react";
 import { Commodity } from "@/lib/types";
@@ -122,13 +123,15 @@ export function CommodityImage({
   className?: string;
 }) {
   const { lang } = useTranslation();
-  const sizes = { sm: "w-8 h-8", md: "w-11 h-11", lg: "w-14 h-14" };
+  const sizes = { sm: 32, md: 44, lg: 56 };
+  const sClass = { sm: "w-8 h-8", md: "w-11 h-11", lg: "w-14 h-14" };
   return (
-    <img
-      src={commodity.image}
+    <Image
+      src={commodity.image || ''}
       alt={lang === 'tl' ? commodity.tagalog : commodity.name}
-      loading="lazy"
-      className={`${sizes[size]} rounded-xl object-contain p-1 border border-border/70 bg-[#faf8f3] shrink-0 ${className}`}
+      width={sizes[size]}
+      height={sizes[size]}
+      className={`${sClass[size]} rounded-xl object-contain p-1 border border-border/70 bg-[#faf8f3] shrink-0 ${className}`}
     />
   );
 }

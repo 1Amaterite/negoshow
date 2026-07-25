@@ -35,6 +35,7 @@ export async function GET(req: Request) {
     const prices = await prisma.retailPrice.findMany({
       where: {
         commodityId: cid,
+        isVerified: true,
         observedDate: {
           gte: cutoffDate
         }

@@ -5,6 +5,8 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
 const prisma = new PrismaClient();
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const bulletins = await prisma.bulletinRecord.findMany({
@@ -14,12 +16,14 @@ export async function GET() {
 
     const data = bulletins.map(b => ({
       id: b.id.toString(),
-      type: b.fileUrl.endsWith('.pdf') ? "PDF" : "IMG",
-      source: "DA Bantay Presyo", // or from metadata if we added it to schema
-      date: b.uploadDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      location: "Metro Manila",
-      commodities: ["Lahat ng Gulay"],
-      status: b.processedStatus
+      type: b.docType || (b.fileUrl.endsWith('.pdf') ? "PDF" : "IMG"),
+      source: b.sourceOffice || "DA Bantay Presyo",
+      date: b.bulletinDate || b.uploadDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+      location: b.coverage || "Metro Manila",
+      commodities: b.commodities && b.commodities.length > 0 ? b.commodities : ["Lahat ng Gulay"],
+      status: b.processedStatus,
+      verified: b.processedStatus === 'PROCESSED',
+      fileUrl: b.fileUrl
     }));
 
     return NextResponse.json({ data });

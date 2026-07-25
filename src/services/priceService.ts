@@ -12,6 +12,7 @@ export async function getLatestBaseline(commodityId: number, marketId: number) {
     where: {
       commodityId,
       marketId,
+      isVerified: true,
     },
     orderBy: {
       observedDate: 'desc',

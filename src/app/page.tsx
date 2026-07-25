@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { Search, ChevronRight, BarChart2, FileText } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -14,7 +15,17 @@ export default function Home() {
     queryFn: async () => {
       const res = await fetch('/api/commodities');
       return await res.json();
-    }
+    },
+    staleTime: 300000
+  });
+
+  const { data: lastUpdateData } = useQuery({
+    queryKey: ['lastUpdate'],
+    queryFn: async () => {
+      const res = await fetch('/api/system/last-update');
+      return await res.json();
+    },
+    staleTime: 300000
   });
 
   const volatileCommodity = dynamicCommodities.length > 0 ? dynamicCommodities.find((c: any) => c.volatility === "High") || dynamicCommodities[0] : null;
@@ -23,9 +34,9 @@ export default function Home() {
   return (
     <div>
       <div className="home-hero px-5 pt-8 pb-6">
-        <div className="relative z-10">
-          <img src="/images/negoshow-logo.svg" alt="NegoShow" className="h-12 w-auto mb-4 brightness-0 invert opacity-95" />
-          <h1 className="text-2xl font-extrabold text-white leading-tight mb-1" dangerouslySetInnerHTML={{ __html: t.home.title.replace(' ', '<br/>') }}></h1>
+        <div className="flex flex-col md:items-center">
+          <Image src="/images/negoshow-logo.svg" alt="NegoShow" width={160} height={48} className="h-12 w-auto mb-4 brightness-0 invert opacity-95" />
+          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight mb-1" dangerouslySetInnerHTML={{ __html: t.home.title.replace(' ', '<br/>') }}></h1>
           <p className="text-white/70 text-base leading-relaxed mb-5 max-w-xl">{t.home.subtitle}</p>
           <Link href="/checker"
             className="bg-white text-primary font-bold text-sm px-5 py-3 rounded-full flex items-center gap-2 active:scale-95 transition-transform shadow-md w-fit">
@@ -62,7 +73,9 @@ export default function Home() {
           <div className="col-span-2 bg-card rounded-xl p-3 border border-border flex items-center justify-between">
             <div>
               <p className="text-xs text-muted-foreground">{t.home.lastBaselineUpdate}</p>
-              <p className="text-sm font-bold text-foreground">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} — DA Bulletin</p>
+              <p className="text-sm font-bold text-foreground">
+                {lastUpdateData?.lastUpdate ? new Date(lastUpdateData.lastUpdate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Loading...'} — DA Bulletin
+              </p>
             </div>
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"/>
           </div>

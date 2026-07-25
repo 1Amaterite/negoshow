@@ -23,7 +23,8 @@ export default function TransparencyPage() {
     queryFn: async () => {
       const res = await fetch('/api/bulletins');
       return await res.json();
-    }
+    },
+    staleTime: 300000
   });
 
   // Fetch Commodities for Chart
@@ -34,7 +35,8 @@ export default function TransparencyPage() {
       const data = await res.json();
       if (!predCId && data.length > 0) setPredCId(data[0].id);
       return data;
-    }
+    },
+    staleTime: 300000
   });
 
   // Fetch Historical Trend Data
@@ -45,7 +47,8 @@ export default function TransparencyPage() {
       const res = await fetch(`/api/analytics/trend?commodityId=${predCId}&days=30`);
       return await res.json();
     },
-    enabled: !!predCId
+    enabled: !!predCId,
+    staleTime: 300000
   });
 
   const predC = dynamicCommodities.find((c: any) => c.id === predCId) || dynamicCommodities[0];
