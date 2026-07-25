@@ -172,7 +172,17 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
 
     // Determine observed date from document header or fallback to now
     let observedDate = new Date();
-    if (parsedResult.bulletinDate) {
+    
+    // First try to use the user-provided date from the bulletin record
+    const bulletin = await prisma.bulletinRecord.findUnique({ where: { id: bulletinId } });
+    if (bulletin?.bulletinDate) {
+      const parsedUserDate = new Date(bulletin.bulletinDate);
+      if (!isNaN(parsedUserDate.getTime())) {
+        observedDate = parsedUserDate;
+      }
+    } 
+    // Fallback to Gemini extracted date
+    else if (parsedResult.bulletinDate) {
       const parsedDate = new Date(parsedResult.bulletinDate);
       if (!isNaN(parsedDate.getTime())) {
         observedDate = parsedDate;
