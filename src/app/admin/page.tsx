@@ -9,7 +9,7 @@ import { LanguageToggle } from "@/components/LanguageToggle";
 import { useTranslation } from "@/context/LanguageContext";
 import { COMMODITY_NAMES, COVERAGE_AREAS } from "@/lib/constants";
 
-type AdminTab = "upload" | "validate";
+type AdminTab = "upload" | "validate" | "logs";
 type DocStatus = "processing" | "validated" | "published" | "failed";
 
 interface UploadedDoc {
@@ -80,7 +80,19 @@ export default function AdminPage() {
     try {
       const res = await fetch('/api/admin/validation');
       const json = await res.json();
-      if (json.data) setRecords(json.data);
+      if (json.data) {
+        setRecords(json.data);
+        if (json.data.length > 0) {
+          setAlerts(prev => {
+            if (prev.some(a => a.id === 'pending-validation')) return prev;
+            return [...prev, {
+              id: 'pending-validation',
+              message: `You have ${json.data.length} pending items in the validation queue that require your attention.`,
+              isRead: false
+            }];
+          });
+        }
+      }
     } catch(e) {}
   };
 
@@ -115,9 +127,11 @@ export default function AdminPage() {
     } catch(e) {}
   };
 
-  const dismissAlert = async (id: number) => {
+  const dismissAlert = async (id: number | string) => {
     setAlerts(p => p.filter(a => a.id !== id));
-    await fetch('/api/alerts', { method: 'POST', body: JSON.stringify({ id }) });
+    if (typeof id === 'number') {
+      await fetch('/api/alerts', { method: 'POST', body: JSON.stringify({ id }) });
+    }
   };
 
 
@@ -256,13 +270,13 @@ export default function AdminPage() {
 
       {/* Alerts */}
       {alerts.length > 0 && (
-        <div className="px-4 md:px-0 mb-4 space-y-2">
+        <div className="fixed top-20 right-4 md:right-8 z-[100] flex flex-col gap-3 max-w-sm w-full pointer-events-none">
           {alerts.map(alert => (
-            <div key={alert.id} className="bg-red-50 border border-red-200 p-3 rounded-xl flex items-start gap-3">
-              <AlertTriangle size={16} className="text-red-600 shrink-0 mt-0.5" />
-              <div className="flex-1 text-sm font-medium text-red-900">{alert.message}</div>
-              <button onClick={() => dismissAlert(alert.id)} className="text-red-500 hover:text-red-700">
-                <X size={16} />
+            <div key={alert.id} className="bg-white border border-border/50 border-l-4 border-l-red-500 shadow-2xl p-4 rounded-xl flex items-start gap-3 pointer-events-auto transition-all duration-300 ease-out">
+              <AlertTriangle size={18} className="text-red-600 shrink-0 mt-0.5" />
+              <div className="flex-1 text-sm font-bold text-slate-800 leading-snug">{alert.message}</div>
+              <button onClick={() => dismissAlert(alert.id)} className="text-slate-400 hover:text-red-600 transition-colors p-1 bg-slate-50 hover:bg-red-50 rounded-full shrink-0">
+                <X size={14} />
               </button>
             </div>
           ))}
@@ -273,10 +287,11 @@ export default function AdminPage() {
       <div className="admin-tabs flex bg-muted border-b border-border md:flex-col md:border md:rounded-2xl md:overflow-hidden md:bg-card">
         {([
           ["upload", lang === "en" ? "Upload Bulletin" : "I-upload", Upload],
-          ["validate", lang === "en" ? "Validate Queue" : "I-validate", Database]
+          ["validate", lang === "en" ? "Validate Queue" : "I-validate", Database],
+          ["logs", lang === "en" ? "Log Transactions" : "Mga Log", Clock]
         ] as [AdminTab,string,React.ElementType][]).map(([id,label,Icon])=>(
           <button key={id} onClick={()=>setTab(id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-colors border-b-2 ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-3 text-xs font-bold transition-colors border-b-2 md:border-b-0 md:border-l-4 ${
               tab===id?"border-primary text-primary bg-background":"border-transparent text-muted-foreground"
             }`}>
             <Icon size={13}/>{label}
@@ -504,12 +519,26 @@ export default function AdminPage() {
             </div>
           )}
 
-          {done.length > 0 && (
+          {/* Completed validations are now moved to the Logs tab, but we keep the header counts above */}
+        </div>
+      )}
+
+      {/* ── LOGS TAB ─── */}
+      {tab==="logs" && (
+        <div className="px-4 pt-4 pb-6 space-y-5">
+          <div className="bg-card rounded-xl border border-border px-4 py-3 flex items-start gap-2">
+            <Info size={13} className="text-primary mt-0.5 shrink-0"/>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              {lang === "en" ? "This tab shows your validation logs for the current session." : "Ipinapakita ng tab na ito ang iyong mga validation log para sa kasalukuyang session."}
+            </p>
+          </div>
+
+          {done.length > 0 ? (
             <div>
-              <SL>{t.admin.validate.completed}</SL>
+              <SL>{t.admin.validate.completed || "Completed Transactions"}</SL>
               <div className="space-y-2">
-                {done.map((r)=>(
-                  <div key={r.id} className="flex items-center justify-between bg-card rounded-xl px-4 py-3 border border-border">
+                {done.map((r, i)=>(
+                  <div key={r.id || i} className="flex items-center justify-between bg-card rounded-xl px-4 py-3 border border-border shadow-sm">
                     <div>
                       <p className="text-sm font-semibold text-foreground">{r.commodity?.name} — ₱{Number(r.price).toFixed(2)}</p>
                       <p className="text-xs text-muted-foreground">{r.market?.name} · {new Date(r.observedDate).toLocaleDateString()}</p>
@@ -520,6 +549,12 @@ export default function AdminPage() {
                   </div>
                 ))}
               </div>
+            </div>
+          ) : (
+            <div className="text-center py-10 bg-card rounded-xl border border-border border-dashed">
+              <p className="text-sm font-semibold text-muted-foreground">
+                {lang === "en" ? "No transactions logged yet." : "Wala pang nai-log na transaksyon."}
+              </p>
             </div>
           )}
         </div>
