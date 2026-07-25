@@ -112,7 +112,7 @@ export default function ProcurementPage() {
                   const rising=c.trend==="up";
                   const action=rising?t.procurement.todayPlan.wait:t.procurement.todayPlan.buy;
                   return <button key={c.id} onClick={()=>onOpenAdvisor(c)} className="recommendation-row">
-                    <div className="commodity-cell"><CommodityImage commodity={c} size="sm"/><div><strong>{lang === 'tl' ? c.tagalog : c.name}</strong><small>{c.name}</small></div></div>
+                    <div className="commodity-cell"><CommodityImage commodity={c} size="sm"/><div><strong>{lang === 'tl' ? c.tagalog : c.name}</strong>{lang === 'tl' && <small>{c.name}</small>}</div></div>
                     <div><small>{t.procurement.todayPlan.lowestPrice}</small><strong className="price-good">₱{c.sources[0].price}/kg</strong></div>
                     <div><small>{t.procurement.todayPlan.bestSource}</small><strong>{c.sources[0].name}</strong></div>
                     <div className={`action-pill ${rising?"wait":"buy"}`}>{action}</div>

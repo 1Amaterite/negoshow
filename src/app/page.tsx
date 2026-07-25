@@ -34,9 +34,9 @@ export default function Home() {
   return (
     <div>
       <div className="home-hero px-5 pt-8 pb-6">
-        <div className="flex flex-col md:items-center">
+        <div className="relative z-10">
           <Image src="/images/negoshow-logo.svg" alt="NegoShow" width={160} height={48} className="h-12 w-auto mb-4 brightness-0 invert opacity-95" />
-          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight mb-1" dangerouslySetInnerHTML={{ __html: t.home.title.replace(' ', '<br/>') }}></h1>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-tight mb-1" dangerouslySetInnerHTML={{ __html: t.home.title.replace(' ', '<br/>') }}></h1>
           <p className="text-white/70 text-base leading-relaxed mb-5 max-w-xl">{t.home.subtitle}</p>
           <Link href="/checker"
             className="bg-white text-primary font-bold text-sm px-5 py-3 rounded-full flex items-center gap-2 active:scale-95 transition-transform shadow-md w-fit">
