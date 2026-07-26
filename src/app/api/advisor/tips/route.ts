@@ -48,17 +48,36 @@ Example format:
 
     const { GoogleGenerativeAI } = await import("@google/generative-ai");
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-3.5-flash", 
-      generationConfig: { 
-        temperature: 0.7,
-        responseMimeType: "application/json"
-      } 
-    });
     
-    const result = await model.generateContent(prompt);
-    const text = result.response.text();
+    const fallbackModels = [
+      'gemini-3.1-flash-lite',
+      'gemini-3.5-flash-lite',
+      'gemini-flash-lite-latest',
+      'gemini-3-flash-preview',
+      'gemini-3.6-flash',
+      'gemini-flash-latest',
+      'gemini-3.5-flash'
+    ];
+
+    let text = "";
+    for (const modelName of fallbackModels) {
+      try {
+        const model = genAI.getGenerativeModel({ 
+          model: modelName, 
+          generationConfig: { 
+            temperature: 0.7,
+            responseMimeType: "application/json"
+          } 
+        });
+        const result = await model.generateContent(prompt);
+        text = result.response.text();
+        if (text) break;
+      } catch (err) {
+        console.warn(`[AdvisorRoute] Model ${modelName} failed, trying next fallback.`);
+      }
+    }
     
+    if (!text) throw new Error("All Gemini fallback models failed for advisor tips");
     const tips = JSON.parse(text);
 
     return NextResponse.json(tips);
