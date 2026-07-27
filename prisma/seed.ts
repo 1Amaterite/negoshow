@@ -72,7 +72,6 @@ async function main() {
       await prisma.retailPrice.create({
         data: {
           commodityId: commodity.id,
-          marketId: pasayMarket.id,
           price: price > 0 ? price : 50,
           observedDate: d,
           isVerified: true,

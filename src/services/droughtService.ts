@@ -44,7 +44,7 @@ export async function triggerProxyIngestion() {
   
   // Get all active commodities and their latest prices
   const latestPrices = await prisma.retailPrice.groupBy({
-    by: ['commodityId', 'marketId'],
+    by: ['commodityId'],
     _max: { observedDate: true }
   });
 
@@ -58,7 +58,6 @@ export async function triggerProxyIngestion() {
     const oldPrice = await prisma.retailPrice.findFirst({
       where: {
         commodityId: record.commodityId,
-        marketId: record.marketId,
         observedDate: record._max.observedDate
       }
     });
@@ -70,7 +69,6 @@ export async function triggerProxyIngestion() {
 
       proxyRecordsToCreate.push({
         commodityId: oldPrice.commodityId,
-        marketId: oldPrice.marketId,
         price: syntheticPrice,
         observedDate: now,
         isProxy: true,

@@ -13,12 +13,15 @@ export async function GET(req: Request) {
         observedDate: { gte: thirtyDaysAgo },
         isVerified: true
       },
-      include: { commodity: true, market: true },
+      include: { commodity: true },
       orderBy: { observedDate: 'desc' }
     });
 
     const vendorChecks = await prisma.vendorCheck.findMany({
-      where: { checkedAt: { gte: thirtyDaysAgo } },
+      where: { 
+        checkedAt: { gte: thirtyDaysAgo },
+        isVerified: true
+      },
       include: { commodity: true, market: true },
       orderBy: { checkedAt: 'desc' }
     });
@@ -26,7 +29,7 @@ export async function GET(req: Request) {
     let csvContent = "Type,Date,Commodity,Market,Price(PHP)\n";
 
     retailPrices.forEach(rp => {
-        csvContent += `Baseline,${rp.observedDate.toISOString()},${rp.commodity.name},${rp.market.name},${rp.price}\n`;
+        csvContent += `Baseline,${rp.observedDate.toISOString()},${rp.commodity.name},General Market,${rp.price}\n`;
     });
 
     vendorChecks.forEach(vc => {

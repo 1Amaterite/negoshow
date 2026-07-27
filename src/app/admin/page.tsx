@@ -28,13 +28,11 @@ interface AdminRecord {
   id: number;
   commodity: { name: string };
   market: { name: string };
-  price: number;
-  observedDate: string;
+  checkedPrice: number;
+  checkedAt: string;
   status: "pending" | "approved" | "rejected";
   isFlagged?: boolean;
   flagReason?: string;
-  confidenceScore?: number;
-  isProxy?: boolean;
 }
 
 
@@ -496,13 +494,7 @@ export default function AdminPage() {
               <SL>{t.admin.validate.forReview}</SL>
               <div className="space-y-2">
                 {pending.map((r)=>(
-                  <div key={r.id} className={`bg-card rounded-xl border overflow-hidden ${r.isFlagged ? "border-amber-300" : (r.isProxy?"border-blue-300":"border-border")}`}>
-                    {r.isProxy && !r.isFlagged && (
-                      <div className="flex items-center gap-2 px-4 py-2 bg-blue-100 border-b border-blue-200">
-                        <AlertTriangle size={13} className="text-blue-600"/>
-                        <p className="text-xs font-semibold text-blue-700">{t.admin.validate.proxyBaseline}</p>
-                      </div>
-                    )}
+                  <div key={r.id} className={`bg-card rounded-xl border overflow-hidden ${r.isFlagged ? "border-amber-300" : "border-border"}`}>
                     {r.isFlagged && (
                       <div className="flex items-start gap-2 px-4 py-2 bg-amber-50 border-b border-amber-200">
                         <AlertTriangle size={13} className="text-amber-600 mt-0.5 shrink-0"/>
@@ -517,15 +509,10 @@ export default function AdminPage() {
                         <div>
                           <p className="text-sm font-bold text-foreground">{r.commodity?.name}</p>
                           <div className="flex items-center flex-wrap gap-1.5 mt-0.5">
-                            <p className="text-xs text-muted-foreground">{r.market?.name} · {new Date(r.observedDate).toLocaleDateString()}</p>
-                            {r.confidenceScore && (
-                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${r.confidenceScore < 90 ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>
-                                {r.confidenceScore}% AI Confidence
-                              </span>
-                            )}
+                            <p className="text-xs text-muted-foreground">{r.market?.name} · {new Date(r.checkedAt).toLocaleDateString()}</p>
                           </div>
                         </div>
-                        <p className={`text-lg font-extrabold shrink-0 ${r.isFlagged?"text-amber-700":(r.isProxy?"text-blue-700":"text-foreground")}`}>₱{Number(r.price).toFixed(2)}</p>
+                        <p className={`text-lg font-extrabold shrink-0 ${r.isFlagged?"text-amber-700":"text-foreground"}`}>₱{Number(r.checkedPrice).toFixed(2)}</p>
                       </div>
                       <div className="flex gap-2">
                         <button onClick={()=>updateRec(r.id,"approved")}
@@ -565,8 +552,8 @@ export default function AdminPage() {
                 {done.map((r, i)=>(
                   <div key={r.id || i} className="flex items-center justify-between bg-card rounded-xl px-4 py-3 border border-border shadow-sm">
                     <div>
-                      <p className="text-sm font-semibold text-foreground">{r.commodity?.name} — ₱{Number(r.price).toFixed(2)}</p>
-                      <p className="text-xs text-muted-foreground">{r.market?.name} · {new Date(r.observedDate).toLocaleDateString()}</p>
+                      <p className="text-sm font-semibold text-foreground">{r.commodity?.name} — ₱{Number(r.checkedPrice).toFixed(2)}</p>
+                      <p className="text-xs text-muted-foreground">{r.market?.name} · {new Date(r.checkedAt).toLocaleDateString()}</p>
                     </div>
                     <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${r.validationStatus==="approved"?"bg-green-100 text-green-700 border-green-200":"bg-red-100 text-red-700 border-red-200"}`}>
                       {r.validationStatus==="approved"?t.admin.validate.statusApproved:t.admin.validate.statusRejected}

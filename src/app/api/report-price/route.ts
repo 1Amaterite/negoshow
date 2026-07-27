@@ -24,9 +24,12 @@ export async function POST(req: Request) {
 
     // Anti-Spam Safeguard: Fetch the current baseline
     const latestBaseline = await prisma.retailPrice.findFirst({
-      where: { commodityId, marketId, isVerified: true },
+      where: { commodityId, isVerified: true },
       orderBy: { observedDate: 'desc' }
     });
+
+    let isFlagged = false;
+    let flagReason = null;
 
     if (latestBaseline) {
       // If the reported price is > 300% of the baseline, reject it
@@ -37,6 +40,12 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
+
+      const variance = Math.abs(price - latestBaseline.price) / latestBaseline.price;
+      if (variance > 0.20) {
+        isFlagged = true;
+        flagReason = `Price difference is ${(variance * 100).toFixed(1)}% from baseline.`;
+      }
     }
 
     // Insert into VendorCheck table
@@ -46,7 +55,8 @@ export async function POST(req: Request) {
         marketId,
         checkedPrice: parseFloat(price),
         checkedAt: new Date(),
-        isFlagged: false // Could flag it for admin review instead of rejecting, but rejection is requested
+        isFlagged,
+        flagReason
       }
     });
 

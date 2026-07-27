@@ -4,14 +4,13 @@ import prisma from './dbService';
  * Fetches the most recently observed baseline retail price for a given commodity and market.
  * 
  * @param commodityId The ID of the commodity
- * @param marketId The ID of the market
+ * @param commodityId The ID of the commodity
  * @returns The latest RetailPrice record, or null if none exist
  */
-export async function getLatestBaseline(commodityId: number, marketId: number) {
+export async function getLatestBaseline(commodityId: number) {
   return await prisma.retailPrice.findFirst({
     where: {
       commodityId,
-      marketId,
       isVerified: true,
     },
     orderBy: {
@@ -19,7 +18,6 @@ export async function getLatestBaseline(commodityId: number, marketId: number) {
     },
     include: {
       commodity: true,
-      market: true,
     }
   });
 }
@@ -35,10 +33,11 @@ export async function getLatestBaseline(commodityId: number, marketId: number) {
  */
 export async function saveVendorQuote(commodityId: number, marketId: number, checkedPrice: number) {
   // Fetch the latest baseline to determine if this quote should be flagged
-  const baseline = await getLatestBaseline(commodityId, marketId);
+  const baseline = await getLatestBaseline(commodityId);
   
   // Basic flagging logic: flag if the checked price is strictly greater than the baseline price
   const isFlagged = baseline ? checkedPrice > baseline.price : false;
+  const flagReason = isFlagged ? `Price is higher than baseline (₱${baseline?.price.toFixed(2)})` : null;
 
   return await prisma.vendorCheck.create({
     data: {
@@ -46,6 +45,7 @@ export async function saveVendorQuote(commodityId: number, marketId: number, che
       marketId,
       checkedPrice,
       isFlagged,
+      flagReason,
       checkedAt: new Date(),
     },
   });

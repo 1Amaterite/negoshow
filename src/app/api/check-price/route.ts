@@ -22,11 +22,24 @@ export async function POST(req: NextRequest) {
       marketId = market ? market.id : 1;
     }
 
+    let numericCommodityId = Number(commodityId);
+    if (isNaN(numericCommodityId)) {
+      const cName = String(commodityId).replace(/-/g, ' ');
+      const c = await prisma.commodity.findFirst({
+        where: { name: { contains: cName, mode: 'insensitive' } }
+      });
+      if (c) {
+        numericCommodityId = c.id;
+      } else {
+        return NextResponse.json({ error: 'Commodity not found' }, { status: 404 });
+      }
+    }
+
     // Save the vendor quote. Our service logic already records it in the database.
-    const vendorQuote = await saveVendorQuote(Number(commodityId), marketId, Number(quotedPrice));
+    const vendorQuote = await saveVendorQuote(numericCommodityId, marketId, Number(quotedPrice));
 
     // Fetch the baseline to calculate the variance precisely for the response
-    const baseline = await getLatestBaseline(Number(commodityId), marketId);
+    const baseline = await getLatestBaseline(numericCommodityId);
 
     if (!baseline) {
       return NextResponse.json({

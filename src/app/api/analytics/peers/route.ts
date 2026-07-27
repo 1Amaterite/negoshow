@@ -21,6 +21,7 @@ export async function GET(req: Request) {
                 take: 1
             },
             vendorChecks: {
+                where: { isVerified: true },
                 orderBy: { checkedAt: 'desc' },
                 take: 10
             }

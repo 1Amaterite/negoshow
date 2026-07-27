@@ -16,14 +16,17 @@ export default function DashboardPage() {
   const { t, lang } = useTranslation();
   
   const [predCId, setPredCId] = useState<string | null>(null);
-  const [timeframe, setTimeframe] = useState<"7" | "30">("30");
+  const timeframe = "7";
+
+  const [descCId, setDescCId] = useState<string | null>(null);
+  const descTimeframe = "7";
 
   const { data: dynamicCommodities = [], isLoading: isCommsLoading } = useQuery({
     queryKey: ['commodities'],
     queryFn: async () => {
-      const res = await fetch('/api/commodities');
       const data = await res.json();
       if (!predCId && data.length > 0) setPredCId(data[0].id);
+      if (!descCId && data.length > 0) setDescCId(data[0].id);
       return data;
     },
     staleTime: 300000
@@ -40,6 +43,26 @@ export default function DashboardPage() {
     staleTime: 300000
   });
 
+  const { data: descPrices, isLoading: isDescPricesLoading } = useQuery({
+    queryKey: ['desc-prices', descCId, descTimeframe],
+    queryFn: async () => {
+      if (!descCId) return null;
+      const res = await fetch(`/api/analytics/descriptive/prices?commodityId=${descCId}&days=${descTimeframe}`);
+      return await res.json();
+    },
+    enabled: !!descCId,
+    staleTime: 300000
+  });
+
+  const { data: descActivity, isLoading: isDescActivityLoading } = useQuery({
+    queryKey: ['desc-activity', descTimeframe],
+    queryFn: async () => {
+      const res = await fetch(`/api/analytics/descriptive/activity?days=${descTimeframe}`);
+      return await res.json();
+    },
+    staleTime: 300000
+  });
+
   const { data: lastUpdateData } = useQuery({
     queryKey: ['lastUpdate'],
     queryFn: async () => {
@@ -51,7 +74,7 @@ export default function DashboardPage() {
 
   const VARIANCE_DATA = dynamicCommodities.map((c: any) => ({
     name: c.shortLabel,
-    [t.dashboard.baseline30d]: c.baseline30d,
+    [t.dashboard.vendorQuoteAvg]: c.vendorQuoteAvg,
     [t.dashboard.current]: c.baseline,
     variancePct: parseFloat(c.change.toFixed(1)),
   }));
@@ -94,65 +117,169 @@ export default function DashboardPage() {
         <p className="text-sm text-muted-foreground mt-1">{t.dashboard.subtitle}</p>
       </div>
       <div className="dashboard-content px-5 md:px-10 lg:px-14 py-6 md:py-8">
+        {/* DESCRIPTIVE ANALYTICS PANELS */}
+        <div className="dashboard-overview mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <SL>Descriptive Analytics (Last 7 Days)</SL>
+          </div>
 
-        {/* DESCRIPTIVE */}
-        <section className="dashboard-section dashboard-overview">
-          <SL>{t.dashboard.keyMetrics}</SL>
-          <div className="grid grid-cols-2 gap-2 mb-5">
-            <div className="bg-card rounded-2xl p-5 border border-border shadow-sm">
-              <p className="text-xs text-muted-foreground mb-1">{t.dashboard.marketStability}</p>
-              <p className="text-xl font-extrabold text-amber-700">{t.ui.medium}</p>
-              <div className="flex items-center gap-1 mt-1">
-                <div className="flex gap-0.5">{[1,2,3].map(i=><div key={i} className={`h-1.5 w-4 rounded-full ${i<=2?"bg-amber-500":"bg-muted"}`}/>)}</div>
-                <span className="text-xs text-muted-foreground">2/3</span>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
+            <div className="bg-card rounded-2xl p-4 border border-border shadow-sm flex flex-col justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.volatileCommodities}</p>
+                <p className="text-xl font-extrabold text-red-600">{volatileCount} <span className="text-sm text-muted-foreground font-normal">of {dynamicCommodities.length}</span></p>
+              </div>
+              <p className="text-xs text-red-600 font-semibold mt-2 truncate">{dynamicCommodities.filter((c: any) => c.volatility === "High").map((c: any) => c.shortLabel).join(", ") || "None"}</p>
+            </div>
+            
+            <div className="bg-card rounded-2xl p-4 border border-border shadow-sm flex flex-col justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.avgPriceChange}</p>
+                <p className={`text-xl font-extrabold ${parseFloat(avgChange)>0?"text-red-600":"text-green-700"}`}>{parseFloat(avgChange)>0?"+":""}{avgChange}%</p>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2">From AI bulletins</p>
+            </div>
+
+            <div className="bg-card rounded-2xl p-4 border border-border shadow-sm flex flex-col justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.risingPrices}</p>
+                <p className="text-xl font-extrabold text-foreground">{risingCount} <span className="text-sm text-muted-foreground font-normal">{t.dashboard.commodities}</span></p>
+              </div>
+              <div className="flex items-center gap-1 mt-2"><TrendingUp size={12} className="text-red-500"/><span className="text-[10px] text-red-600 font-semibold">{t.dashboard.buyWithCaution}</span></div>
+            </div>
+
+            <div className="bg-card rounded-2xl p-4 border border-border shadow-sm flex flex-col justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Vendor Checks Today</p>
+                <p className="text-xl font-extrabold text-blue-700">{isDescActivityLoading ? "..." : (descActivity?.kpi?.checksToday || 0)}</p>
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2">Quotes submitted</p>
+            </div>
+          </div>
+
+          {/* Panel 1: Commodity Price Overview */}
+          <section className="dashboard-section mb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+              <div>
+                <h2 className="text-lg font-bold text-foreground">Commodity Price Overview</h2>
+                <p className="text-xs text-muted-foreground">What happened to prices recently?</p>
+              </div>
+              
+              <div className="flex flex-wrap items-center gap-2">
+                <select 
+                  value={descCId || ""} 
+                  onChange={(e) => setDescCId(e.target.value)}
+                  className="bg-card border border-border rounded-lg text-sm px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary max-w-[120px] truncate"
+                >
+                  {dynamicCommodities.map((c: any) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
               </div>
             </div>
-            <div className="bg-card rounded-2xl p-5 border border-border shadow-sm">
-              <p className="text-xs text-muted-foreground mb-1">{t.dashboard.volatileCommodities}</p>
-              <p className="text-xl font-extrabold text-red-600">{volatileCount} <span className="text-sm text-muted-foreground font-normal">sa {dynamicCommodities.length}</span></p>
-              <p className="text-xs text-red-600 font-semibold mt-1">{dynamicCommodities.filter((c: any) => c.volatility === "High").map((c: any) => c.shortLabel).join(", ")}</p>
-            </div>
-            <div className="bg-card rounded-2xl p-5 border border-border shadow-sm">
-              <p className="text-xs text-muted-foreground mb-1">{t.dashboard.avgPriceChange}</p>
-              <p className={`text-xl font-extrabold ${parseFloat(avgChange)>0?"text-red-600":"text-green-700"}`}>{parseFloat(avgChange)>0?"+":""}{avgChange}%</p>
-              <p className="text-xs text-muted-foreground mt-1">{t.dashboard.comparedToYesterday}</p>
-            </div>
-            <div className="bg-card rounded-2xl p-5 border border-border shadow-sm">
-              <p className="text-xs text-muted-foreground mb-1">{t.dashboard.risingPrices}</p>
-              <p className="text-xl font-extrabold text-foreground">{risingCount} <span className="text-sm text-muted-foreground font-normal">{t.dashboard.commodities}</span></p>
-              <div className="flex items-center gap-1 mt-1"><TrendingUp size={12} className="text-red-500"/><span className="text-xs text-red-600 font-semibold">{t.dashboard.buyWithCaution}</span></div>
-            </div>
-          </div>
 
-          <SL>{t.dashboard.currentBaselineSummary}</SL>
-          <div className="rounded-2xl border border-border overflow-hidden bg-card shadow-sm">
-            <div className="grid grid-cols-[1fr_60px_76px_60px] md:grid-cols-[1fr_60px_80px_70px] md:gap-3 bg-muted px-3 py-2 border-b border-border">
-              {[t.dashboard.commodity, t.dashboard.price, t.dashboard.trend, t.dashboard.status].map((h)=>(
-                <p key={h} className={`text-[10px] font-bold uppercase tracking-wide text-muted-foreground ${h!==t.dashboard.commodity?"text-right":""}`}>{h}</p>
-              ))}
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <div className="bg-card rounded-2xl p-4 border border-border shadow-sm">
+                <p className="text-xs text-muted-foreground mb-1">Current Median</p>
+                <p className="text-xl font-extrabold text-foreground">
+                  {isDescPricesLoading ? "..." : `₱${descPrices?.kpi?.median || 0}`}
+                </p>
+              </div>
+              <div className="bg-card rounded-2xl p-4 border border-border shadow-sm">
+                <p className="text-xs text-muted-foreground mb-1">Highest Price</p>
+                <p className="text-xl font-extrabold text-red-600">
+                  {isDescPricesLoading ? "..." : `₱${descPrices?.kpi?.highest || 0}`}
+                </p>
+              </div>
+              <div className="bg-card rounded-2xl p-4 border border-border shadow-sm">
+                <p className="text-xs text-muted-foreground mb-1">Lowest Price</p>
+                <p className="text-xl font-extrabold text-green-700">
+                  {isDescPricesLoading ? "..." : `₱${descPrices?.kpi?.lowest || 0}`}
+                </p>
+              </div>
             </div>
-            {dynamicCommodities.map((c: any,i: number)=>(
-              <button key={c.id} onClick={() => router.push(`/commodity/${c.id}`)}
-                className={`w-full grid grid-cols-[1fr_60px_76px_60px] md:grid-cols-[1fr_60px_80px_70px] md:gap-3 items-center px-3 py-3 border-b border-border last:border-0 hover:bg-muted active:scale-[0.99] transition-all text-left ${i%2===0?"":"bg-card/40"}`}>
-                <div className="flex items-center gap-2 min-w-0">
-                  <CommodityImage commodity={c} size="sm"/>
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-foreground truncate">{c.shortLabel}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{c.primarySource}</p>
-                  </div>
-                </div>
-                <p className="text-sm font-extrabold text-foreground text-right">₱{Number(c.baseline).toFixed(2)}</p>
-                <div className="flex justify-end">
-                  {c.trend==="up"     && <span className="text-[10px] font-bold text-red-600   flex items-center gap-0.5"><TrendingUp size={10}/>+{c.change}%</span>}
-                  {c.trend==="down"   && <span className="text-[10px] font-bold text-green-700 flex items-center gap-0.5"><TrendingDown size={10}/>{c.change}%</span>}
-                  {c.trend==="stable" && <span className="text-[10px] font-bold text-muted-foreground flex items-center gap-0.5"><Minus size={10}/>±{Math.abs(c.change)}%</span>}
-                </div>
-                <div className="flex justify-end"><KalagayanChip volatility={c.volatility}/></div>
-              </button>
-            ))}
-          </div>
-          <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1"><Info size={10}/>{t.dashboard.tapForInfo}</p>
-        </section>
+
+            <div className="bg-card rounded-xl border border-border overflow-hidden px-2 pt-4 pb-3 shadow-sm">
+              {isDescPricesLoading ? <div className="h-[240px] flex items-center justify-center text-xs text-muted-foreground">Loading chart...</div> : (
+                <ResponsiveContainer width="100%" height={240}>
+                  <LineChart data={descPrices?.chartData || []}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(114,121,110,0.15)"/>
+                    <XAxis dataKey="date" tick={{fontSize:9,fill:"#72796e"}} axisLine={false} tickLine={false}/>
+                    <YAxis tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false} width={45} tickFormatter={(v: any)=>`₱${v}`}/>
+                    <Tooltip contentStyle={{ borderRadius: '12px', fontSize: '12px', border: '1px solid #e2e8f0' }} />
+                    <Line type="monotone" dataKey="price" name="Avg Baseline" stroke="#154212" strokeWidth={2.5} dot={{fill:"#154212",r:3}} connectNulls={false}/>
+                    <Line type="monotone" dataKey="askingPrice" name="Avg Vendor Quote" stroke="#c8a97a" strokeWidth={2.5} dot={{fill:"#c8a97a",r:3}} connectNulls={false}/>
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </section>
+
+          {/* Panel 2: Vendor Check Activity Summary */}
+          <section className="dashboard-section dashboard-activity">
+            <div className="mb-4">
+              <h2 className="text-lg font-bold text-foreground">Vendor Check Activity Summary</h2>
+              <p className="text-xs text-muted-foreground">How are vendors using the system?</p>
+            </div>
+
+            <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm mb-4">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="px-4 py-2 font-bold text-muted-foreground uppercase tracking-wide text-xs">Total Checks Today</th>
+                    <th className="px-4 py-2 font-bold text-muted-foreground uppercase tracking-wide text-xs">Most Checked Commodity</th>
+                    <th className="px-4 py-2 font-bold text-muted-foreground uppercase tracking-wide text-xs">Top Market</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t border-border">
+                    <td className="px-4 py-3 font-extrabold text-blue-700">{isDescActivityLoading ? "..." : (descActivity?.kpi?.checksToday || 0)}</td>
+                    <td className="px-4 py-3 font-extrabold text-foreground">{isDescActivityLoading ? "..." : (descActivity?.kpi?.mostCheckedCommodity || "N/A")}</td>
+                    <td className="px-4 py-3 font-extrabold text-foreground">{isDescActivityLoading ? "..." : (descActivity?.kpi?.topMarket || "N/A")}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="bg-card rounded-xl border border-border px-4 pt-4 pb-2 shadow-sm">
+                <p className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wide">Checks per Market</p>
+                {isDescActivityLoading ? <div className="h-[200px] flex items-center justify-center text-xs">Loading...</div> : (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={descActivity?.marketBarData || []} layout="vertical" margin={{ left: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(114,121,110,0.15)"/>
+                      <XAxis type="number" hide />
+                      <YAxis dataKey="name" type="category" tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false} width={80}/>
+                      <Tooltip cursor={{fill:"rgba(0,0,0,0.05)"}} contentStyle={{ borderRadius: '12px', fontSize: '12px' }}/>
+                      <Bar dataKey="checks" name="Checks" fill="#2563eb" radius={[0,4,4,0]} barSize={20} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+
+              <div className="bg-card rounded-xl border border-border px-4 pt-4 pb-2 shadow-sm">
+                <p className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wide">Markets With Quotes Over Baseline</p>
+                {isDescActivityLoading ? <div className="h-[200px] flex items-center justify-center text-xs text-muted-foreground">Loading...</div> : (
+                  descActivity?.overBaselineData?.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={descActivity.overBaselineData} margin={{ left: -20, right: 10, top: 10, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(114,121,110,0.15)"/>
+                        <XAxis dataKey="name" tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false} />
+                        <YAxis tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false} />
+                        <Tooltip cursor={{fill:"rgba(0,0,0,0.05)"}} contentStyle={{ borderRadius: '12px', fontSize: '12px', border: '1px solid #e2e8f0' }}/>
+                        <Bar dataKey="overCount" name="Over Baseline Quotes" fill="#dc2626" radius={[4,4,0,0]} barSize={30} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="h-[200px] flex items-center justify-center text-xs text-muted-foreground text-center">
+                      No markets found with<br/>quotes over baseline.
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          </section>
+        </div>
 
         {/* DIAGNOSTIC */}
         <section className="dashboard-section dashboard-variance mt-8">
@@ -161,7 +288,7 @@ export default function DashboardPage() {
             <div className="px-4 pt-4 pb-1">
               <div className="flex items-center gap-4 mb-3">
                 <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-primary"/><span className="text-[10px] text-muted-foreground font-semibold">{t.dashboard.current}</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#c8a97a]"/><span className="text-[10px] text-muted-foreground font-semibold">{t.dashboard.avg30Day}</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#c8a97a]"/><span className="text-[10px] text-muted-foreground font-semibold">{t.dashboard.avgVendorQuote}</span></div>
               </div>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={VARIANCE_DATA} barCategoryGap="28%" barGap={3}>
@@ -169,7 +296,7 @@ export default function DashboardPage() {
                   <XAxis dataKey="name" tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false}/>
                   <YAxis tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false} width={45} tickFormatter={(v: any)=>`₱${new Intl.NumberFormat('en-US').format(v)}`} domain={[0,"auto"]}/>
                   <Tooltip content={<VarTip/>}/>
-                  <Bar dataKey={t.dashboard.baseline30d} fill="#c8a97a" radius={[3,3,0,0]}/>
+                  <Bar dataKey={t.dashboard.vendorQuoteAvg} fill="#c8a97a" radius={[3,3,0,0]}/>
                   <Bar dataKey={t.dashboard.current} radius={[3,3,0,0]}>
                     {VARIANCE_DATA.map((d: any,i: number)=><Cell key={i} fill={d.variancePct>10?"#c62828":d.variancePct<-10?"#2d5a27":"#154212"}/>)}
                   </Bar>
@@ -177,32 +304,36 @@ export default function DashboardPage() {
               </ResponsiveContainer>
             </div>
           </div>
-          <div className="space-y-1.5">
-            {VARIANCE_DATA.filter((d: any)=>Math.abs(d.variancePct)>10).map((d: any)=>{
-              const hi = d.variancePct > 0;
-              return (
-                <div key={d.name} className={`flex items-center justify-between rounded-xl px-4 py-3 border ${hi?"bg-red-50 border-red-200":"bg-green-50 border-green-200"}`}>
-                  <div>
-                    <p className="text-xs font-bold text-foreground">{d.name}</p>
-                    <p className={`text-[10px] font-semibold ${hi?"text-red-600":"text-green-700"}`}>
-                      {hi?t.dashboard.higherThan30.replace('{{amt}}', (d[t.dashboard.current]-d[t.dashboard.baseline30d]).toFixed(1)) : t.dashboard.lowerThan30.replace('{{amt}}', (d[t.dashboard.baseline30d]-d[t.dashboard.current]).toFixed(1))}
-                    </p>
+          <div className="space-y-2 mt-4">
+            <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Highly Variant Commodities (&gt;10% diff)</h3>
+            
+            {VARIANCE_DATA.filter((d: any)=>Math.abs(d.variancePct)>10).length > 0 ? (
+              VARIANCE_DATA.filter((d: any)=>Math.abs(d.variancePct)>10).map((d: any)=>{
+                const hi = d.variancePct > 0;
+                return (
+                  <div key={d.name} className={`flex items-center justify-between rounded-xl px-4 py-3 border ${hi?"bg-red-50 border-red-200":"bg-green-50 border-green-200"}`}>
+                    <div>
+                      <p className="text-xs font-bold text-foreground">{d.name}</p>
+                      <p className={`text-[10px] font-semibold ${hi?"text-red-600":"text-green-700"}`}>
+                        {hi?t.dashboard.higherThanBaseline.replace('{{amt}}', (d[t.dashboard.vendorQuoteAvg]-d[t.dashboard.current]).toFixed(1)) : t.dashboard.lowerThanBaseline.replace('{{amt}}', (d[t.dashboard.current]-d[t.dashboard.vendorQuoteAvg]).toFixed(1))}
+                      </p>
+                    </div>
+                    <span className={`text-base font-extrabold ${hi?"text-red-600":"text-green-700"}`}>{hi?"+":""}{d.variancePct}%</span>
                   </div>
-                  <span className={`text-base font-extrabold ${hi?"text-red-600":"text-green-700"}`}>{hi?"+":""}{d.variancePct}%</span>
-                </div>
-              );
-            })}
+                );
+              })
+            ) : (
+              <div className="text-center py-5 bg-card border border-border rounded-xl shadow-sm">
+                <p className="text-xs text-muted-foreground">All commodity quotes are currently within 10% of the database baseline.</p>
+              </div>
+            )}
           </div>
         </section>
 
         {/* PREDICTIVE */}
         <section className="dashboard-section dashboard-forecast mt-8">
-          <div className="flex items-center justify-between">
+          <div className="mb-4">
             <SL>{t.dashboard.pricePrediction}</SL>
-            <div className="flex gap-1 bg-muted p-1 rounded-lg">
-              <button onClick={() => setTimeframe("7")} className={`text-[10px] font-bold px-2 py-1 rounded ${timeframe==="7"?"bg-white shadow-sm":"text-muted-foreground"}`}>{t.commodity.days7}</button>
-              <button onClick={() => setTimeframe("30")} className={`text-[10px] font-bold px-2 py-1 rounded ${timeframe==="30"?"bg-white shadow-sm":"text-muted-foreground"}`}>{t.commodity.days30}</button>
-            </div>
           </div>
           
           <div className="flex overflow-x-auto pb-2 -mx-5 px-5 md:mx-0 md:px-0 gap-2 mb-4 scrollbar-hide">

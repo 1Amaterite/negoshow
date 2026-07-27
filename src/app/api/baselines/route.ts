@@ -6,8 +6,8 @@ export async function GET() {
     const latestBaselines = await prisma.retailPrice.findMany({
       where: { isVerified: true },
       orderBy: { observedDate: 'desc' },
-      distinct: ['commodityId', 'marketId'],
-      include: { commodity: true, market: true }
+      distinct: ['commodityId'],
+      include: { commodity: true }
     });
 
     return NextResponse.json(latestBaselines);

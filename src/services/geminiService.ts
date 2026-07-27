@@ -26,10 +26,6 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
     
     const arrayBuffer = await response.arrayBuffer();
     
-    // Fetch a default market for location reference
-    const defaultMarket = await prisma.market.findFirst();
-    const dynamicMarketId = defaultMarket?.id || 1;
-    
     const buffer = Buffer.from(arrayBuffer);
     const base64Data = buffer.toString('base64');
     
@@ -83,12 +79,9 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
 
     // 2. Call Gemini API with Fallbacks
     const fallbackModels = [
-      'gemini-3.5-flash-lite',
-      'gemini-3.1-flash-lite',
-      'gemini-2.5-flash-lite',
-      'gemini-3.5-flash',
-      'gemini-2.5-flash',
-      'gemini-3-flash'
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-1.5-pro'
     ];
 
     const generationConfig: GenerationConfig = {
@@ -259,11 +252,11 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
 
       recordsToCreate.push({
         commodityId: commodity.id,
-        marketId: dynamicMarketId,
         price: roundedPrice,
         observedDate: observedDate,
         sourceBulletinId: bulletinId,
-        isVerified: false,
+        isVerified: true,
+        validationStatus: 'approved',
         confidenceScore: item.confidenceScore,
         isFlagged: recordFlagged,
         flagReason: recordFlagReason
@@ -279,7 +272,7 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
     if (isOutlierDetected) {
       await prisma.bulletinRecord.update({
         where: { id: bulletinId },
-        data: { processedStatus: 'REQUIRES_MANUAL_REVIEW' }
+        data: { processedStatus: 'PROCESSED' }
       });
       // Create an alert for admin dashboard
       await prisma.adminAlert.create({
@@ -292,7 +285,7 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
     } else {
       await prisma.bulletinRecord.update({
         where: { id: bulletinId },
-        data: { processedStatus: 'PENDING_VALIDATION' }
+        data: { processedStatus: 'PROCESSED' }
       });
       console.log(`[GeminiService] Bulletin ${bulletinId} processed successfully with ${recordsToCreate.length} prices.`);
     }

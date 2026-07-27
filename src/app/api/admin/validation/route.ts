@@ -10,24 +10,22 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const pendingPrices = await prisma.retailPrice.findMany({
+    const pendingPrices = await prisma.vendorCheck.findMany({
       where: { validationStatus: 'pending' },
       include: {
         commodity: true,
-        market: true,
-        sourceBulletin: true
+        market: true
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { checkedAt: 'desc' }
     });
 
-    const logPrices = await prisma.retailPrice.findMany({
+    const logPrices = await prisma.vendorCheck.findMany({
       where: { validationStatus: { not: 'pending' } },
       include: {
         commodity: true,
-        market: true,
-        sourceBulletin: true
+        market: true
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { checkedAt: 'desc' },
       take: 100
     });
 
@@ -49,33 +47,17 @@ export async function PATCH(request: Request) {
     
     let updatedRecord;
     if (action === 'approve' || action === 'approved') {
-      updatedRecord = await prisma.retailPrice.update({
+      updatedRecord = await prisma.vendorCheck.update({
         where: { id },
         data: { isVerified: true, validationStatus: 'approved' }
       });
     } else if (action === 'reject' || action === 'rejected') {
-      updatedRecord = await prisma.retailPrice.update({
+      updatedRecord = await prisma.vendorCheck.update({
         where: { id },
         data: { isVerified: false, validationStatus: 'rejected' }
       });
     } else {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
-    }
-
-    if (updatedRecord.sourceBulletinId) {
-      const remainingPending = await prisma.retailPrice.count({
-        where: {
-          sourceBulletinId: updatedRecord.sourceBulletinId,
-          validationStatus: 'pending'
-        }
-      });
-
-      if (remainingPending === 0) {
-        await prisma.bulletinRecord.update({
-          where: { id: updatedRecord.sourceBulletinId },
-          data: { processedStatus: 'VALIDATED' }
-        });
-      }
     }
 
     return NextResponse.json({ success: true, data: updatedRecord });

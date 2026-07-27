@@ -10,10 +10,10 @@ export async function GET() {
         retailPrices: {
           where: { isVerified: true },
           orderBy: { observedDate: 'desc' },
-          take: 30, // Get last 30 days to calculate baseline/30d
-          include: { market: true }
+          take: 30 // Get last 30 days to calculate baseline/30d
         },
         vendorChecks: {
+          where: { isVerified: true },
           orderBy: { checkedAt: 'desc' },
           take: 50,
         },
@@ -30,9 +30,15 @@ export async function GET() {
         ? prices30d.reduce((a, b) => a + b, 0) / prices30d.length 
         : latestPrice;
 
-      // Calculate trend and change
-      const changeAbs = latestPrice - avg30d;
-      const change = avg30d > 0 ? (changeAbs / avg30d) * 100 : 0;
+      // Calculate average of recent vendor quotes (asking price)
+      const vendorQuotes = c.vendorChecks.map(vc => vc.checkedPrice);
+      const vendorQuoteAvg = vendorQuotes.length > 0
+        ? vendorQuotes.reduce((a, b) => a + b, 0) / vendorQuotes.length
+        : latestPrice; // fallback if no quotes
+
+      // Calculate trend and change based on Vendor Quotes vs Baseline
+      const changeAbs = vendorQuoteAvg - latestPrice;
+      const change = latestPrice > 0 ? (changeAbs / latestPrice) * 100 : 0;
       
       let trend = "stable";
       if (change > 2) trend = "up";
@@ -42,21 +48,12 @@ export async function GET() {
       if (Math.abs(change) > 5) volatility = "Medium";
       if (Math.abs(change) > 10) volatility = "High";
 
-      // Get unique markets and their latest price for this commodity
-      const marketLatestPrices = new Map<string, number>();
-      for (const rp of c.retailPrices) {
-        if (rp.market?.name && !marketLatestPrices.has(rp.market.name)) {
-          marketLatestPrices.set(rp.market.name, rp.price);
-        }
+      const sources: {name: string, price: number}[] = [];
+      if (vendorQuoteAvg > 0) {
+        sources.push({name: "General Market (Avg)", price: vendorQuoteAvg});
+      } else {
+        sources.push({name: "General Market", price: latestPrice});
       }
-      
-      const sources = Array.from(marketLatestPrices.entries())
-        .slice(0, 3)
-        .map(([name, price]) => ({
-          name,
-          price: Math.round(price)
-        }))
-        .sort((a, b) => a.price - b.price); // sort by cheapest first
 
       return {
         id: c.name.toLowerCase().replace(" ", "-"),
@@ -66,11 +63,12 @@ export async function GET() {
         image: c.imageUrl,
         baseline: Math.round(latestPrice),
         baseline30d: Math.round(avg30d),
+        vendorQuoteAvg: Math.round(vendorQuoteAvg),
         trend,
         change: Math.round(change),
         changeAbs: Math.round(changeAbs),
         volatility,
-        primarySource: c.retailPrices[0]?.market?.name || "Multiple Sources",
+        primarySource: "General Market",
         sources
       };
     });
