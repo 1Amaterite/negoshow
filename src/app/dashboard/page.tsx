@@ -29,7 +29,8 @@ export default function DashboardPage() {
       if (!descCId && data.length > 0) setDescCId(data[0].id);
       return data;
     },
-    staleTime: 300000
+    staleTime: 300000,
+    refetchInterval: 5000
   });
 
   const { data: predData = [], isLoading: isPredLoading } = useQuery({
@@ -40,7 +41,8 @@ export default function DashboardPage() {
       return await res.json();
     },
     enabled: !!predCId,
-    staleTime: 300000
+    staleTime: 300000,
+    refetchInterval: 5000
   });
 
   const { data: descPrices, isLoading: isDescPricesLoading } = useQuery({
@@ -51,7 +53,8 @@ export default function DashboardPage() {
       return await res.json();
     },
     enabled: !!descCId,
-    staleTime: 300000
+    staleTime: 300000,
+    refetchInterval: 5000
   });
 
   const { data: descActivity, isLoading: isDescActivityLoading } = useQuery({
@@ -60,7 +63,8 @@ export default function DashboardPage() {
       const res = await fetch(`/api/analytics/descriptive/activity?days=${descTimeframe}`);
       return await res.json();
     },
-    staleTime: 300000
+    staleTime: 300000,
+    refetchInterval: 5000
   });
 
   const { data: lastUpdateData } = useQuery({
@@ -69,13 +73,14 @@ export default function DashboardPage() {
       const res = await fetch('/api/system/last-update');
       return await res.json();
     },
-    staleTime: 300000
+    staleTime: 300000,
+    refetchInterval: 5000
   });
 
   const VARIANCE_DATA = dynamicCommodities.map((c: any) => ({
     name: c.shortLabel,
-    [t.dashboard.vendorQuoteAvg]: c.vendorQuoteAvg,
-    [t.dashboard.current]: c.baseline,
+    "Middleman Asking Price": c.vendorQuoteAvg,
+    "Baseline (Retail Price)": c.baseline,
     variancePct: parseFloat(c.change.toFixed(1)),
   }));
 
@@ -283,12 +288,14 @@ export default function DashboardPage() {
 
         {/* DIAGNOSTIC */}
         <section className="dashboard-section dashboard-variance mt-8">
-          <SL>{t.dashboard.priceVariance}</SL>
+          <div className="mb-4">
+            <SL>Diagnostic Analytics</SL>
+          </div>
           <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm mb-4">
             <div className="px-4 pt-4 pb-1">
               <div className="flex items-center gap-4 mb-3">
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-primary"/><span className="text-[10px] text-muted-foreground font-semibold">{t.dashboard.current}</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#c8a97a]"/><span className="text-[10px] text-muted-foreground font-semibold">{t.dashboard.avgVendorQuote}</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-primary"/><span className="text-[10px] text-muted-foreground font-semibold">Baseline (Retail Price)</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#c8a97a]"/><span className="text-[10px] text-muted-foreground font-semibold">Middleman Asking Price</span></div>
               </div>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={VARIANCE_DATA} barCategoryGap="28%" barGap={3}>
@@ -296,8 +303,8 @@ export default function DashboardPage() {
                   <XAxis dataKey="name" tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false}/>
                   <YAxis tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false} width={45} tickFormatter={(v: any)=>`₱${new Intl.NumberFormat('en-US').format(v)}`} domain={[0,"auto"]}/>
                   <Tooltip content={<VarTip/>}/>
-                  <Bar dataKey={t.dashboard.vendorQuoteAvg} fill="#c8a97a" radius={[3,3,0,0]}/>
-                  <Bar dataKey={t.dashboard.current} radius={[3,3,0,0]}>
+                  <Bar dataKey="Middleman Asking Price" fill="#c8a97a" radius={[3,3,0,0]}/>
+                  <Bar dataKey="Baseline (Retail Price)" radius={[3,3,0,0]}>
                     {VARIANCE_DATA.map((d: any,i: number)=><Cell key={i} fill={d.variancePct>10?"#c62828":d.variancePct<-10?"#2d5a27":"#154212"}/>)}
                   </Bar>
                 </BarChart>
@@ -315,7 +322,7 @@ export default function DashboardPage() {
                     <div>
                       <p className="text-xs font-bold text-foreground">{d.name}</p>
                       <p className={`text-[10px] font-semibold ${hi?"text-red-600":"text-green-700"}`}>
-                        {hi?t.dashboard.higherThanBaseline.replace('{{amt}}', (d[t.dashboard.vendorQuoteAvg]-d[t.dashboard.current]).toFixed(1)) : t.dashboard.lowerThanBaseline.replace('{{amt}}', (d[t.dashboard.current]-d[t.dashboard.vendorQuoteAvg]).toFixed(1))}
+                        {hi?t.dashboard.higherThanBaseline.replace('{{amt}}', (d["Middleman Asking Price"]-d["Baseline (Retail Price)"]).toFixed(1)) : t.dashboard.lowerThanBaseline.replace('{{amt}}', (d["Baseline (Retail Price)"]-d["Middleman Asking Price"]).toFixed(1))}
                       </p>
                     </div>
                     <span className={`text-base font-extrabold ${hi?"text-red-600":"text-green-700"}`}>{hi?"+":""}{d.variancePct}%</span>
@@ -333,7 +340,7 @@ export default function DashboardPage() {
         {/* PREDICTIVE */}
         <section className="dashboard-section dashboard-forecast mt-8">
           <div className="mb-4">
-            <SL>{t.dashboard.pricePrediction}</SL>
+            <SL>Predictive Analytics (Next 7 Days)</SL>
           </div>
           
           <div className="flex overflow-x-auto pb-2 -mx-5 px-5 md:mx-0 md:px-0 gap-2 mb-4 scrollbar-hide">
