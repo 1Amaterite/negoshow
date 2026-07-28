@@ -79,7 +79,7 @@ export default function DashboardPage() {
   });
 
   const VARIANCE_DATA = dynamicCommodities.map((c: any) => ({
-    name: c.shortLabel,
+    name: (t.commodities as Record<string, string>)[c.shortLabel] || c.shortLabel,
     "Middleman Asking Price": c.vendorQuoteAvg,
     "Baseline (Retail Price)": c.baseline,
     variancePct: parseFloat(c.change.toFixed(1)),
@@ -126,16 +126,16 @@ export default function DashboardPage() {
         {/* DESCRIPTIVE ANALYTICS PANELS */}
         <div className="dashboard-overview mb-8">
           <div className="flex items-center justify-between mb-4">
-            <SL>Descriptive Analytics (Last 7 Days)</SL>
+            <SL>{t.dashboard.descriptiveAnalytics}</SL>
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
             <div className="bg-card rounded-2xl p-4 border border-border shadow-sm flex flex-col justify-between">
               <div>
                 <p className="text-xs text-muted-foreground mb-1">{t.dashboard.volatileCommodities}</p>
-                <p className="text-xl font-extrabold text-red-600">{volatileCount} <span className="text-sm text-muted-foreground font-normal">of {dynamicCommodities.length}</span></p>
+                <p className="text-xl font-extrabold text-red-600">{volatileCount} <span className="text-sm text-muted-foreground font-normal">{t.common.of} {dynamicCommodities.length}</span></p>
               </div>
-              <p className="text-xs text-red-600 font-semibold mt-2 truncate">{dynamicCommodities.filter((c: any) => c.volatility === "High").map((c: any) => c.shortLabel).join(", ") || "None"}</p>
+              <p className="text-xs text-red-600 font-semibold mt-2 truncate">{dynamicCommodities.filter((c: any) => c.volatility === "High").map((c: any) => (t.commodities as Record<string, string>)[c.shortLabel] || c.shortLabel).join(", ") || t.common.none}</p>
             </div>
             
             <div className="bg-card rounded-2xl p-4 border border-border shadow-sm flex flex-col justify-between">
@@ -143,7 +143,7 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground mb-1">{t.dashboard.avgPriceChange}</p>
                 <p className={`text-xl font-extrabold ${parseFloat(avgChange)>0?"text-red-600":"text-green-700"}`}>{parseFloat(avgChange)>0?"+":""}{avgChange}%</p>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-2">From AI bulletins</p>
+              <p className="text-[10px] text-muted-foreground mt-2">{t.dashboard.fromAIBulletins}</p>
             </div>
 
             <div className="bg-card rounded-2xl p-4 border border-border shadow-sm flex flex-col justify-between">
@@ -156,10 +156,10 @@ export default function DashboardPage() {
 
             <div className="bg-card rounded-2xl p-4 border border-border shadow-sm flex flex-col justify-between">
               <div>
-                <p className="text-xs text-muted-foreground mb-1">Vendor Checks Today</p>
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.vendorChecksToday}</p>
                 <p className="text-xl font-extrabold text-blue-700">{isDescActivityLoading ? "..." : (descActivity?.kpi?.checksToday || 0)}</p>
               </div>
-              <p className="text-[10px] text-muted-foreground mt-2">Quotes submitted</p>
+              <p className="text-[10px] text-muted-foreground mt-2">{t.dashboard.quotesSubmitted}</p>
             </div>
           </div>
 
@@ -167,18 +167,18 @@ export default function DashboardPage() {
           <section className="dashboard-section mb-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
               <div>
-                <h2 className="text-lg font-bold text-foreground">Commodity Price Overview</h2>
-                <p className="text-xs text-muted-foreground">What happened to prices recently?</p>
+                <h2 className="text-lg font-bold text-foreground">{t.dashboard.commodityPriceOverview}</h2>
+                <p className="text-xs text-muted-foreground">{t.dashboard.commodityPriceSub}</p>
               </div>
               
               <div className="flex flex-wrap items-center gap-2">
                 <select 
                   value={descCId || ""} 
                   onChange={(e) => setDescCId(e.target.value)}
-                  className="bg-card border border-border rounded-lg text-sm px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary max-w-[120px] truncate"
+                  className="bg-card border border-border rounded-lg text-sm px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-primary min-w-[150px] max-w-[250px] md:max-w-xs"
                 >
                   {dynamicCommodities.map((c: any) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id}>{(t.commodities as Record<string, string>)[c.name] || c.name}</option>
                   ))}
                 </select>
               </div>
@@ -186,19 +186,19 @@ export default function DashboardPage() {
 
             <div className="grid grid-cols-3 gap-2 mb-4">
               <div className="bg-card rounded-2xl p-4 border border-border shadow-sm">
-                <p className="text-xs text-muted-foreground mb-1">Current Median</p>
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.currentMedian}</p>
                 <p className="text-xl font-extrabold text-foreground">
                   {isDescPricesLoading ? "..." : `₱${descPrices?.kpi?.median || 0}`}
                 </p>
               </div>
               <div className="bg-card rounded-2xl p-4 border border-border shadow-sm">
-                <p className="text-xs text-muted-foreground mb-1">Highest Price</p>
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.highestPrice}</p>
                 <p className="text-xl font-extrabold text-red-600">
                   {isDescPricesLoading ? "..." : `₱${descPrices?.kpi?.highest || 0}`}
                 </p>
               </div>
               <div className="bg-card rounded-2xl p-4 border border-border shadow-sm">
-                <p className="text-xs text-muted-foreground mb-1">Lowest Price</p>
+                <p className="text-xs text-muted-foreground mb-1">{t.dashboard.lowestPrice}</p>
                 <p className="text-xl font-extrabold text-green-700">
                   {isDescPricesLoading ? "..." : `₱${descPrices?.kpi?.lowest || 0}`}
                 </p>
@@ -224,17 +224,17 @@ export default function DashboardPage() {
           {/* Panel 2: Vendor Check Activity Summary */}
           <section className="dashboard-section dashboard-activity">
             <div className="mb-4">
-              <h2 className="text-lg font-bold text-foreground">Vendor Check Activity Summary</h2>
-              <p className="text-xs text-muted-foreground">How are vendors using the system?</p>
+              <h2 className="text-lg font-bold text-foreground">{t.dashboard.vendorCheckActivity}</h2>
+              <p className="text-xs text-muted-foreground">{t.dashboard.vendorCheckSub}</p>
             </div>
 
             <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm mb-4">
               <table className="w-full text-left text-sm">
                 <thead className="bg-muted">
                   <tr>
-                    <th className="px-4 py-2 font-bold text-muted-foreground uppercase tracking-wide text-xs">Total Checks Today</th>
-                    <th className="px-4 py-2 font-bold text-muted-foreground uppercase tracking-wide text-xs">Most Checked Commodity</th>
-                    <th className="px-4 py-2 font-bold text-muted-foreground uppercase tracking-wide text-xs">Top Market</th>
+                    <th className="px-4 py-2 font-bold text-muted-foreground uppercase tracking-wide text-xs">{t.dashboard.totalChecksToday}</th>
+                    <th className="px-4 py-2 font-bold text-muted-foreground uppercase tracking-wide text-xs">{t.dashboard.mostCheckedCommodity}</th>
+                    <th className="px-4 py-2 font-bold text-muted-foreground uppercase tracking-wide text-xs">{t.dashboard.topMarket}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -249,7 +249,7 @@ export default function DashboardPage() {
 
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-card rounded-xl border border-border px-4 pt-4 pb-2 shadow-sm">
-                <p className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wide">Checks per Market</p>
+                <p className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wide">{t.dashboard.checksPerMarket}</p>
                 {isDescActivityLoading ? <div className="h-[200px] flex items-center justify-center text-xs">Loading...</div> : (
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={descActivity?.marketBarData || []} layout="vertical" margin={{ left: 20 }}>
@@ -264,7 +264,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="bg-card rounded-xl border border-border px-4 pt-4 pb-2 shadow-sm">
-                <p className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wide">Markets With Quotes Over Baseline</p>
+                <p className="text-xs font-bold text-muted-foreground mb-3 uppercase tracking-wide">{t.dashboard.marketsOverBaseline}</p>
                 {isDescActivityLoading ? <div className="h-[200px] flex items-center justify-center text-xs text-muted-foreground">Loading...</div> : (
                   descActivity?.overBaselineData?.length > 0 ? (
                     <ResponsiveContainer width="100%" height={200}>
@@ -277,8 +277,7 @@ export default function DashboardPage() {
                       </BarChart>
                     </ResponsiveContainer>
                   ) : (
-                    <div className="h-[200px] flex items-center justify-center text-xs text-muted-foreground text-center">
-                      No markets found with<br/>quotes over baseline.
+                    <div className="h-[200px] flex items-center justify-center text-xs text-muted-foreground text-center" dangerouslySetInnerHTML={{__html: t.dashboard.noQuotesOverBaseline.replace('\n', '<br/>')}}>
                     </div>
                   )
                 )}
@@ -290,13 +289,13 @@ export default function DashboardPage() {
         {/* DIAGNOSTIC */}
         <section className="dashboard-section dashboard-variance mt-8">
           <div className="mb-4">
-            <SL>Diagnostic Analytics</SL>
+            <SL>{t.dashboard.diagnosticAnalytics}</SL>
           </div>
           <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm mb-4">
             <div className="px-4 pt-4 pb-1">
               <div className="flex items-center gap-4 mb-3">
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-primary"/><span className="text-[10px] text-muted-foreground font-semibold">Baseline (Retail Price)</span></div>
-                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#c8a97a]"/><span className="text-[10px] text-muted-foreground font-semibold">Middleman Asking Price</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-primary"/><span className="text-[10px] text-muted-foreground font-semibold">{t.dashboard.baselineRetailPrice}</span></div>
+                <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-sm bg-[#c8a97a]"/><span className="text-[10px] text-muted-foreground font-semibold">{t.dashboard.middlemanAskingPrice}</span></div>
               </div>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={VARIANCE_DATA} barCategoryGap="28%" barGap={3}>
@@ -313,7 +312,7 @@ export default function DashboardPage() {
             </div>
           </div>
           <div className="space-y-2 mt-4">
-            <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">Highly Variant Commodities (&gt;10% diff)</h3>
+            <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide">{t.dashboard.highlyVariant}</h3>
             
             {VARIANCE_DATA.filter((d: any)=>Math.abs(d.variancePct)>10).length > 0 ? (
               VARIANCE_DATA.filter((d: any)=>Math.abs(d.variancePct)>10).map((d: any)=>{
@@ -332,7 +331,7 @@ export default function DashboardPage() {
               })
             ) : (
               <div className="text-center py-5 bg-card border border-border rounded-xl shadow-sm">
-                <p className="text-xs text-muted-foreground">All commodity quotes are currently within 10% of the database baseline.</p>
+                <p className="text-xs text-muted-foreground">{t.dashboard.allQuotesWithin10}</p>
               </div>
             )}
           </div>
@@ -341,7 +340,7 @@ export default function DashboardPage() {
         {/* PREDICTIVE */}
         <section className="dashboard-section dashboard-forecast mt-8">
           <div className="mb-4">
-            <SL>Predictive Analytics (Next 7 Days)</SL>
+            <SL>{t.dashboard.predictiveAnalytics}</SL>
           </div>
           
           <div className="flex overflow-x-auto pb-2 -mx-5 px-5 md:mx-0 md:px-0 gap-2 mb-4 scrollbar-hide">
@@ -349,7 +348,7 @@ export default function DashboardPage() {
               <button key={c.id} onClick={()=>setPredCId(c.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border whitespace-nowrap transition-all shrink-0 hover:shadow-sm active:scale-95 ${
                   predC?.id===c.id?"bg-primary text-white border-primary":"bg-card border-border hover:bg-muted/50 text-foreground"
-                }`}><CommodityImage commodity={c} size="sm" className="!w-6 !h-6 !rounded-md"/>{c.shortLabel}</button>
+                }`}><CommodityImage commodity={c} size="sm" className="!w-6 !h-6 !rounded-md"/>{(t.commodities as Record<string, string>)[c.shortLabel] || c.shortLabel}</button>
             ))}
           </div>
           <div className="bg-card rounded-xl border border-border overflow-hidden">
