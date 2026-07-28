@@ -47,7 +47,8 @@ export async function GET(req: Request) {
       araw: p.observedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
       aktwal: Math.round(p.price),
       hula: null as number | null,
-      isPeak: false
+      isPeak: false,
+      isMock: p.sourceBulletinId === null
     }));
 
     if (data.length > 0) {
@@ -63,7 +64,8 @@ export async function GET(req: Request) {
           araw: nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
           aktwal: null as any,
           hula: Math.round(lastPrice * (1 + (i * 0.05))),
-          isPeak: i === 2
+          isPeak: i === 2,
+          isMock: false
         });
       }
     }

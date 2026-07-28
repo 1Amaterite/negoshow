@@ -54,15 +54,19 @@ export default function TransparencyPage() {
 
   const predC = dynamicCommodities.find((c: any) => c.id === predCId) || dynamicCommodities[0];
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (!active || !payload?.length) return null;
-    return (
-      <div className="bg-background border border-border rounded-xl px-3 py-2 shadow-lg text-xs">
-        <p className="font-bold text-foreground mb-1">{label}</p>
-        <p className="text-primary font-semibold">{t.dashboard?.actualPrice || "Baseline Price"}: ₱{payload[0].value}</p>
-      </div>
-    );
-  };
+    const CustomTooltip = ({ active, payload, label }: any) => {
+      if (!active || !payload?.length) return null;
+      const isMock = payload[0].payload.isMock;
+      return (
+        <div className="bg-background border border-border rounded-xl px-3 py-2 shadow-lg text-xs">
+          <p className="font-bold text-foreground mb-1 flex items-center gap-2">
+            {label}
+            {isMock && <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold">Mock Data</span>}
+          </p>
+          <p className="text-primary font-semibold">{t.dashboard?.actualPrice || "Baseline Price"}: ₱{payload[0].value}</p>
+        </div>
+      );
+    };
 
   return (
     <div>
@@ -138,7 +142,16 @@ export default function TransparencyPage() {
                       </div>
                       <p className="text-xs text-muted-foreground flex items-center gap-1 mb-1.5"><Clock size={10}/>{b.date}</p>
                       <div className="flex flex-wrap gap-1">
-                        {b.commodities.map((c: string)=><span key={c} className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{c}</span>)}
+                        {b.extractedPrices && b.extractedPrices.length > 0 ? (
+                          b.extractedPrices.map((p: any) => (
+                            <span key={p.commodityName} className="text-[11px] bg-card text-foreground border border-border px-2 py-0.5 rounded-full flex gap-1 items-center">
+                              <span className="font-semibold">{(t.commodities as any)[p.commodityName] || p.commodityName}:</span>
+                              <span className="text-primary font-bold">₱{p.price}</span>
+                            </span>
+                          ))
+                        ) : (
+                          b.commodities.map((c: string)=><span key={c} className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{c}</span>)
+                        )}
                       </div>
                     </div>
                   </div>

@@ -19,7 +19,10 @@ export function CommodityCard({ commodity, label, changeText, changeColor }: Com
         <CommodityImage commodity={commodity} size="sm" />
         <p className="text-lg font-bold text-foreground">{lang === 'tl' ? (t.commodities as any)[commodity.name] || commodity.name : commodity.name}</p>
       </div>
-      <p className={`text-xs ${changeColor} font-semibold mt-0.5`}>{changeText}</p>
+      <p className={`text-xs ${changeColor} font-semibold mt-0.5 flex justify-between items-center`}>
+        <span>{changeText}</span>
+        {(commodity as any).isMock && <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold">Mock Data</span>}
+      </p>
     </div>
   );
 }

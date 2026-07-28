@@ -82,7 +82,8 @@ export async function GET() {
         changeAbs: Math.round(changeAbs),
         volatility,
         primarySource: "General Market",
-        sources
+        sources,
+        isMock: c.retailPrices[0]?.sourceBulletinId === null
       };
     });
 

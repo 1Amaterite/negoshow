@@ -11,7 +11,12 @@ export async function GET() {
   try {
     const bulletins = await prisma.bulletinRecord.findMany({
       orderBy: { uploadDate: 'desc' },
-      take: 20
+      take: 20,
+      include: {
+        retailPrices: {
+          include: { commodity: true }
+        }
+      }
     });
 
     const data = bulletins.map(b => ({
@@ -22,7 +27,11 @@ export async function GET() {
       commodities: b.commodities && b.commodities.length > 0 ? b.commodities : ["Lahat ng Gulay"],
       status: b.processedStatus,
       verified: b.processedStatus === 'PROCESSED',
-      fileUrl: b.fileUrl
+      fileUrl: b.fileUrl,
+      extractedPrices: b.retailPrices.map(rp => ({
+        commodityName: rp.commodity.name,
+        price: rp.price
+      }))
     }));
 
     return NextResponse.json({ data });
