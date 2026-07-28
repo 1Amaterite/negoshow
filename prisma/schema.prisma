@@ -50,6 +50,7 @@ model Market {
 model RetailPrice {
   id               Int      @id @default(autoincrement())
   commodityId      Int
+  marketId         Int?     @default(1)
   price            Float
   observedDate     DateTime
   sourceBulletinId Int?
@@ -62,6 +63,7 @@ model RetailPrice {
   createdAt        DateTime @default(now())
 
   commodity      Commodity       @relation(fields: [commodityId], references: [id])
+  market         Market?         @relation(fields: [marketId], references: [id])
   sourceBulletin BulletinRecord? @relation(fields: [sourceBulletinId], references: [id], onDelete: Cascade)
 
   @@index([commodityId, observedDate])
@@ -69,15 +71,15 @@ model RetailPrice {
 }
 
 model VendorCheck {
-  id           Int      @id @default(autoincrement())
-  commodityId  Int
-  marketId     Int?
-  checkedPrice Float
-  checkedAt        DateTime @default(now())
-  isFlagged        Boolean  @default(false)
+  id               Int                  @id @default(autoincrement())
+  commodityId      Int
+  marketId         Int?
+  checkedPrice     Float
+  checkedAt        DateTime             @default(now())
+  isFlagged        Boolean              @default(false)
   flagReason       String?
-  isVerified       Boolean  @default(false)
-  validationStatus String   @default("pending")
+  isVerified       Boolean              @default(false)
+  validationStatus String               @default("pending")
 
   commodity           Commodity            @relation(fields: [commodityId], references: [id])
   market              Market?              @relation(fields: [marketId], references: [id])

@@ -77,11 +77,16 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
       }
     `;
 
-    // 2. Call Gemini API with Fallbacks
+    // 2. Call Gemini API with Fallbacks (Ordered from Cheapest to Most Expensive)
     const fallbackModels = [
-      'gemini-2.0-flash',
-      'gemini-1.5-flash',
-      'gemini-1.5-pro'
+      'gemini-3.1-flash-lite',      // $0.25 in / $1.50 out (Cheapest)
+      'gemini-3.5-flash-lite',      // $0.30 in / $2.50 out
+      'gemini-flash-lite-latest',   // $0.30 in / $2.50 out
+      'gemini-3-flash-preview',     // $0.50 in / $3.00 out
+      'gemini-3.6-flash',           // $1.50 in / $7.50 out
+      'gemini-flash-latest',        // $1.50 in / $7.50 out
+      'gemini-3.5-flash',           // $1.50 in / $9.00 out
+      'gemini-3.1-pro-preview'      // $2.00 in / $12.00 out
     ];
 
     const generationConfig: GenerationConfig = {
