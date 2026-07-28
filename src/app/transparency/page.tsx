@@ -13,7 +13,7 @@ import {
 
 export default function TransparencyPage() {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
   
   const [predCId, setPredCId] = useState<string | null>(null);
 
@@ -89,7 +89,7 @@ export default function TransparencyPage() {
               <button key={c.id} onClick={()=>setPredCId(c.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border whitespace-nowrap transition-colors shrink-0 ${
                   predC?.id===c.id?"bg-primary text-white border-primary":"bg-card border-border text-foreground"
-                }`}><CommodityImage commodity={c} size="sm" className="!w-6 !h-6 !rounded-md"/>{c.shortLabel}</button>
+                }`}><CommodityImage commodity={c} size="sm" className="!w-6 !h-6 !rounded-full !bg-transparent !border-transparent !p-0"/>{lang === 'en' ? c.name : c.shortLabel}</button>
             ))}
           </div>
 
@@ -136,7 +136,7 @@ export default function TransparencyPage() {
                           ? <span className="flex items-center gap-0.5 text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded-full font-semibold"><Check size={10}/>{t.transparency.verified}</span>
                           : <span className="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-semibold">{t.transparency.waiting}</span>}
                       </div>
-                      <p className="text-xs text-muted-foreground flex items-center gap-1 mb-1.5"><Clock size={10}/>{b.date} · {b.location}</p>
+                      <p className="text-xs text-muted-foreground flex items-center gap-1 mb-1.5"><Clock size={10}/>{b.date}</p>
                       <div className="flex flex-wrap gap-1">
                         {b.commodities.map((c: string)=><span key={c} className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{c}</span>)}
                       </div>

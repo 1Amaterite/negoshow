@@ -19,7 +19,6 @@ export async function GET() {
       type: b.docType || (b.fileUrl.endsWith('.pdf') ? "PDF" : "IMG"),
       source: b.sourceOffice || "DA Bantay Presyo",
       date: b.bulletinDate || b.uploadDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      location: b.coverage || "Metro Manila",
       commodities: b.commodities && b.commodities.length > 0 ? b.commodities : ["Lahat ng Gulay"],
       status: b.processedStatus,
       verified: b.processedStatus === 'PROCESSED',

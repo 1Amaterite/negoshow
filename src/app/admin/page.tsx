@@ -17,7 +17,6 @@ interface UploadedDoc {
   filename: string;
   sourceOffice: string;
   bulletinDate: string;
-  coverage: string;
   docType: "PDF" | "Image";
   commodities: string[];
   status: DocStatus;
@@ -64,11 +63,9 @@ export default function AdminPage() {
   // Upload form state
   const [sourceOffice, setSourceOffice] = useState("");
   const [bulletinDate, setBulletinDate] = useState("");
-  const [coverage, setCoverage] = useState("");
   const [docType, setDocType] = useState<"PDF"|"Image">("PDF");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedComms, setSelectedComms] = useState<string[]>([]);
-  const [coverageOpen, setCoverageOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -123,7 +120,6 @@ export default function AdminPage() {
           filename: b.fileUrl ? b.fileUrl.split('/').pop() : "Bulletin File",
           sourceOffice: b.source || "DA Bantay Presyo",
           bulletinDate: b.date || new Date().toLocaleDateString(),
-          coverage: b.location || "Metro Manila",
           docType: b.type === "IMG" ? "Image" : "PDF",
           commodities: b.commodities || ["Lahat ng Gulay"],
           status: b.status === "PROCESSED" ? "published" : (b.status === "PENDING" || b.status === "PENDING_VALIDATION" ? "processing" : (b.status === "VALIDATED" ? "validated" : "failed")),
@@ -158,11 +154,11 @@ export default function AdminPage() {
   const toggleComm = (name: string) =>
     setSelectedComms((p) => p.includes(name) ? p.filter((c)=>c!==name) : [...p, name]);
 
-  const canUpload = sourceOffice && bulletinDate && coverage && selectedFile && selectedComms.length > 0;
+  const canUpload = sourceOffice && bulletinDate && selectedFile && selectedComms.length > 0;
 
   const handleUpload = async () => {
     if (!canUpload || !selectedFile) {
-      alert("Mangyaring punan ang lahat ng patlang (Office, Date, Coverage, File, at mga Kalakal).");
+      alert("Mangyaring punan ang lahat ng patlang (Office, Date, File, at mga Kalakal).");
       return;
     }
     setUploading(true);
@@ -172,7 +168,6 @@ export default function AdminPage() {
       formData.append("file", selectedFile);
       formData.append("sourceOffice", sourceOffice);
       formData.append("bulletinDate", bulletinDate);
-      formData.append("coverage", coverage);
       formData.append("docType", docType);
       formData.append("commodities", JSON.stringify(selectedComms));
       
@@ -192,7 +187,6 @@ export default function AdminPage() {
         filename: selectedFile.name, 
         sourceOffice, 
         bulletinDate, 
-        coverage,
         docType, 
         commodities: selectedComms, 
         status: "processing",
@@ -208,7 +202,7 @@ export default function AdminPage() {
         fetchUploads();
       }, 5000);
       
-      setSourceOffice(""); setBulletinDate(""); setCoverage("");
+      setSourceOffice(""); setBulletinDate("");
       setSelectedFile(null); setSelectedComms([]);
       setUploadSuccess(true);
       setTimeout(()=>setUploadSuccess(false), 3500);
@@ -466,25 +460,6 @@ export default function AdminPage() {
                   className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"/>
               </div>
 
-              {/* Coverage */}
-              <div className="relative">
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">{t.admin.upload.coverage}</label>
-                <button onClick={()=>setCoverageOpen(!coverageOpen)}
-                  className="w-full flex items-center gap-2 bg-background border border-border rounded-xl px-4 py-3 text-left">
-                  <MapPin size={14} className="text-muted-foreground shrink-0"/>
-                  <span className={`flex-1 text-sm ${coverage?"text-foreground font-medium":"text-muted-foreground/60"}`}>{coverage||"Select..."}</span>
-                  <ChevronDown size={14} className={`text-muted-foreground transition-transform ${coverageOpen?"rotate-180":""}`}/>
-                </button>
-                {coverageOpen && (
-                  <div className="absolute top-full mt-1 left-0 right-0 bg-popover border border-border rounded-xl shadow-lg z-20 overflow-hidden">
-                    {COVERAGE_AREAS.map((area)=>(
-                      <button key={area} onClick={()=>{setCoverage(area);setCoverageOpen(false);}}
-                        className="w-full px-4 py-2.5 text-sm text-left hover:bg-muted transition-colors border-b border-border last:border-0 font-medium">{area}</button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
               {/* Commodities */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
@@ -540,7 +515,7 @@ export default function AdminPage() {
                           <p className="text-xs font-bold text-foreground truncate flex-1">{doc.filename}</p>
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${s.cls}`}>{t.admin.upload.docStatus[doc.status]}</span>
                         </div>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">{doc.sourceOffice} · {doc.coverage}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">{doc.sourceOffice}</p>
                         <p className="text-[10px] text-muted-foreground flex items-center gap-1"><Clock size={9}/>{doc.uploadedAt}</p>
                         <div className="flex flex-wrap gap-1 mt-1.5">
                           {doc.commodities.map((c)=><span key={c} className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{c}</span>)}

@@ -23,7 +23,6 @@ export async function POST(request: Request) {
 
     const sourceOffice = formData.get('sourceOffice') as string || null;
     const bulletinDate = formData.get('bulletinDate') as string || null;
-    const coverage = formData.get('coverage') as string || null;
     const docType = formData.get('docType') as string || null;
     const commoditiesStr = formData.get('commodities') as string;
     
@@ -61,7 +60,6 @@ export async function POST(request: Request) {
           fileUrl: publicUrl,
           sourceOffice,
           bulletinDate,
-          coverage,
           docType,
           commodities
         },
