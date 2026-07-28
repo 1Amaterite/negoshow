@@ -41,7 +41,7 @@ export default function CommodityPage({ params }: { params: Promise<{ id: string
 
   return (
     <div>
-      <PageHeader title={lang === 'tl' ? commodity.tagalog : commodity.name} subtitle={commodity.name} onBack={() => router.back()}/>
+      <PageHeader title={lang === 'tl' ? (t.commodities as any)[commodity.name] || commodity.name : commodity.name} subtitle={commodity.name} onBack={() => router.back()}/>
       <div className="px-4 pt-4 pb-6 space-y-4">
         <div className="bg-primary rounded-2xl px-5 py-5 text-white">
           <p className="text-xs text-white/60 uppercase tracking-widest font-semibold mb-1">{t.commodity.currentBaseline}</p>

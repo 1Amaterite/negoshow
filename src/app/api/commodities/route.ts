@@ -71,8 +71,8 @@ export async function GET() {
       return {
         id: c.name.toLowerCase().replace(" ", "-"),
         name: c.name,
-        tagalog: getTagalogName(c.name),
-        shortLabel: getShortLabel(c.name),
+        tagalog: c.name,
+        shortLabel: c.name,
         image: c.imageUrl,
         baseline: Math.round(latestPrice),
         baseline30d: Math.round(avg30d),
@@ -91,26 +91,4 @@ export async function GET() {
     console.error("Failed to fetch commodities:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
-}
-
-function getTagalogName(name: string) {
-  const map: Record<string, string> = {
-    'Red Onions': 'Sibuyas Pula',
-    'White Onions': 'Sibuyas Puti',
-    'Garlic': 'Bawang',
-    'Ginger': 'Luya',
-    'Potatoes': 'Patatas'
-  };
-  return map[name] || name;
-}
-
-function getShortLabel(name: string) {
-  const map: Record<string, string> = {
-    'Red Onions': 'S. Pula',
-    'White Onions': 'S. Puti',
-    'Garlic': 'Bawang',
-    'Ginger': 'Luya',
-    'Potatoes': 'Patatas'
-  };
-  return map[name] || name;
 }

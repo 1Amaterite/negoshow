@@ -99,7 +99,7 @@ export default function CheckerPage() {
     return (
       <div>
         <QuoteCheckerWalkthrough />
-        <PageHeader title={t.checker.resultTitle} subtitle={`${lang === 'tl' ? checkerCommodity.tagalog : checkerCommodity.name} · ${checkerLocationName}`} />
+        <PageHeader title={t.checker.resultTitle} subtitle={`${lang === 'tl' ? (t.commodities as any)[checkerCommodity.name] || checkerCommodity.name : checkerCommodity.name} · ${checkerLocationName}`} />
         <div className="px-4 pt-5 space-y-4 pb-6">
           <div className={`rounded-2xl p-5 border-2 ${isFair ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
             <div className="flex items-start gap-3">
@@ -182,7 +182,7 @@ export default function CheckerPage() {
                   }`}>
                   <CommodityImage commodity={c} size="md"/>
                   <div className="flex-1">
-                    <p className="font-semibold text-sm leading-tight">{lang === 'tl' ? c.tagalog : c.name}</p>
+                    <p className="font-semibold text-sm leading-tight">{lang === 'tl' ? (t.commodities as any)[c.name] || c.name : c.name}</p>
                     <p className={`text-xs ${checkerCommodity?.id === c.id ? "text-white/70" : "text-muted-foreground"}`}>{t.checker.baseline}: ₱{c.baseline}/kg</p>
                   </div>
                   {checkerCommodity?.id === c.id && <Check size={16} className="text-white shrink-0"/>}

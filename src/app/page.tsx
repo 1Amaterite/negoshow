@@ -54,7 +54,7 @@ export default function Home() {
               <div className="animate-pulse h-8 bg-muted rounded w-3/4 mt-2"></div>
             ) : (
               <>
-                <div className="flex items-center gap-2"><CommodityImage commodity={volatileCommodity} size="sm"/><p className="text-lg font-bold text-foreground">{lang === 'tl' ? volatileCommodity.tagalog : volatileCommodity.name}</p></div>
+                <div className="flex items-center gap-2"><CommodityImage commodity={volatileCommodity} size="sm"/><p className="text-lg font-bold text-foreground">{lang === 'tl' ? (t.commodities as any)[volatileCommodity.name] || volatileCommodity.name : volatileCommodity.name}</p></div>
                 <p className="text-xs text-red-600 font-semibold mt-0.5">{t.home.lastDayIncrease}</p>
               </>
             )}
@@ -65,7 +65,7 @@ export default function Home() {
               <div className="animate-pulse h-8 bg-muted rounded w-3/4 mt-2"></div>
             ) : (
               <>
-                <div className="flex items-center gap-2"><CommodityImage commodity={stableCommodity} size="sm"/><p className="text-lg font-bold text-foreground">{lang === 'tl' ? stableCommodity.tagalog : stableCommodity.name}</p></div>
+                <div className="flex items-center gap-2"><CommodityImage commodity={stableCommodity} size="sm"/><p className="text-lg font-bold text-foreground">{lang === 'tl' ? (t.commodities as any)[stableCommodity.name] || stableCommodity.name : stableCommodity.name}</p></div>
                 <p className="text-xs text-green-700 font-semibold mt-0.5">{t.home.barelyMoved}</p>
               </>
             )}

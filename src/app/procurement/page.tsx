@@ -189,7 +189,7 @@ export default function ProcurementPage() {
                 <button key={c.id} onClick={()=>setPredCId(c.id)}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border whitespace-nowrap transition-colors shrink-0 ${
                     predC?.id===c.id?"bg-primary text-white border-primary":"bg-card border-border text-foreground"
-                  }`}><CommodityImage commodity={c} size="sm" className="!w-6 !h-6 !rounded-md"/>{(t.commodities as any)[c.shortLabel] || c.shortLabel}</button>
+                  }`}><CommodityImage commodity={c} size="sm" className="!w-6 !h-6 !rounded-md"/>{(t.commodities as any)[c.name] || c.name}</button>
               ))}
             </div>
 

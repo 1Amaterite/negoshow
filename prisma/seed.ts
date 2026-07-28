@@ -24,27 +24,27 @@ async function main() {
     prisma.commodity.upsert({
       where: { name: 'Red Onions' },
       update: { imageUrl: '/images/commodities/red-onion.webp' },
-      create: { name: 'Red Onions', unit: 'kg', description: 'Local red onions', imageUrl: '/images/commodities/red-onion.webp' },
+      create: { name: 'Red Onions', imageUrl: '/images/commodities/red-onion.webp' },
     }),
     prisma.commodity.upsert({
       where: { name: 'White Onions' },
       update: { imageUrl: '/images/commodities/white-onion.webp' },
-      create: { name: 'White Onions', unit: 'kg', description: 'Imported white onions', imageUrl: '/images/commodities/white-onion.webp' },
+      create: { name: 'White Onions', imageUrl: '/images/commodities/white-onion.webp' },
     }),
     prisma.commodity.upsert({
       where: { name: 'Garlic' },
       update: { imageUrl: '/images/commodities/garlic.webp' },
-      create: { name: 'Garlic', unit: 'kg', description: 'Native garlic', imageUrl: '/images/commodities/garlic.webp' },
+      create: { name: 'Garlic', imageUrl: '/images/commodities/garlic.webp' },
     }),
     prisma.commodity.upsert({
       where: { name: 'Ginger' },
       update: { imageUrl: '/images/commodities/ginger.webp' },
-      create: { name: 'Ginger', unit: 'kg', description: 'Fresh ginger', imageUrl: '/images/commodities/ginger.webp' },
+      create: { name: 'Ginger', imageUrl: '/images/commodities/ginger.webp' },
     }),
     prisma.commodity.upsert({
       where: { name: 'Potatoes' },
       update: { imageUrl: '/images/commodities/potato.webp' },
-      create: { name: 'Potatoes', unit: 'kg', description: 'Baguio potatoes', imageUrl: '/images/commodities/potato.webp' },
+      create: { name: 'Potatoes', imageUrl: '/images/commodities/potato.webp' },
     }),
   ]);
 

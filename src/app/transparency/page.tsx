@@ -89,7 +89,7 @@ export default function TransparencyPage() {
               <button key={c.id} onClick={()=>setPredCId(c.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border whitespace-nowrap transition-colors shrink-0 ${
                   predC?.id===c.id?"bg-primary text-white border-primary":"bg-card border-border text-foreground"
-                }`}><CommodityImage commodity={c} size="sm" className="!w-6 !h-6 !rounded-full !bg-transparent !border-transparent !p-0"/>{lang === 'en' ? c.name : c.shortLabel}</button>
+                }`}><CommodityImage commodity={c} size="sm" className="!w-6 !h-6 !rounded-full !bg-transparent !border-transparent !p-0"/>{(t.commodities as any)[c.name] || c.name}</button>
             ))}
           </div>
 

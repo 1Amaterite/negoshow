@@ -122,13 +122,13 @@ export function CommodityImage({
   size?: "sm" | "md" | "lg";
   className?: string;
 }) {
-  const { lang } = useTranslation();
+  const { lang, t } = useTranslation();
   const sizes = { sm: 32, md: 44, lg: 56 };
   const sClass = { sm: "w-8 h-8", md: "w-11 h-11", lg: "w-14 h-14" };
   return (
     <Image
       src={commodity.image || ''}
-      alt={lang === 'tl' ? commodity.tagalog : commodity.name}
+      alt={lang === 'tl' ? (t.commodities as any)[commodity.name] || commodity.name : commodity.name}
       width={sizes[size]}
       height={sizes[size]}
       className={`${sClass[size]} rounded-xl object-contain p-1 border border-border/70 bg-[#faf8f3] shrink-0 ${className}`}

@@ -8,11 +8,6 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-enum Decision {
-  APPROVED
-  REJECTED
-  PENDING
-}
 
 enum BulletinStatus {
   PENDING
@@ -32,8 +27,6 @@ model AdminUser {
 model Commodity {
   id          Int     @id @default(autoincrement())
   name        String  @unique
-  unit        String  @default("kg")
-  description String?
   imageUrl    String?
 
   retailPrices RetailPrice[]
@@ -95,7 +88,6 @@ model BulletinRecord {
   processedStatus BulletinStatus @default(PENDING)
   sourceOffice    String?
   bulletinDate    String?
-  coverage        String?
   docType         String?
   commodities     String[]
 

@@ -8,7 +8,6 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const commodityIdStr = searchParams.get('commodityId');
     const daysStr = searchParams.get('days') || '30';
-    const location = searchParams.get('location') || 'all';
     
     if (!commodityIdStr) {
       return NextResponse.json({ error: "Missing commodityId" }, { status: 400 });
@@ -33,12 +32,6 @@ export async function GET(req: Request) {
       observedDate: { gte: cutoffDate }
     };
 
-    if (location !== 'all') {
-      whereClause.sourceBulletin = {
-        coverage: { contains: location, mode: 'insensitive' }
-      };
-    }
-
     const prices = await prisma.retailPrice.findMany({
       where: whereClause,
       orderBy: { observedDate: 'asc' },
@@ -47,14 +40,9 @@ export async function GET(req: Request) {
 
     const vendorWhereClause: any = {
       commodityId,
+      isVerified: true,
       checkedAt: { gte: cutoffDate }
     };
-
-    if (location !== 'all') {
-      vendorWhereClause.market = {
-        name: { contains: location, mode: 'insensitive' }
-      };
-    }
 
     const vendorChecks = await prisma.vendorCheck.findMany({
       where: vendorWhereClause,
@@ -67,8 +55,7 @@ export async function GET(req: Request) {
       where: {
         commodityId,
         isVerified: true,
-        observedDate: { lt: cutoffDate },
-        ...(location !== 'all' ? { sourceBulletin: { coverage: { contains: location, mode: 'insensitive' } } } : {})
+        observedDate: { lt: cutoffDate }
       },
       orderBy: { observedDate: 'desc' }
     });

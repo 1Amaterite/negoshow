@@ -57,7 +57,7 @@ function AdvisorContent() {
         <div className="flex items-center gap-3 bg-card rounded-xl px-4 py-3 border border-border">
           <CommodityImage commodity={commodity} size="lg"/>
           <div>
-            <p className="font-bold text-foreground">{lang === 'tl' ? commodity.tagalog : commodity.name}</p>
+            <p className="font-bold text-foreground">{lang === 'tl' ? (t.commodities as any)[commodity.name] || commodity.name : commodity.name}</p>
             <p className="text-xs text-muted-foreground">{t.advisor.baseline}: ₱{commodity.baseline}/kg{quotedPrice>0&&` · ${t.advisor.quoted}: ₱${quotedPrice}/kg`}</p>
           </div>
         </div>
@@ -128,7 +128,7 @@ function AdvisorContent() {
           <p className="text-xs text-muted-foreground leading-relaxed">
             {isFlagged
               ? t.advisor.flaggedNotice.replace('{{quotedPrice}}', quotedPrice.toString()).replace('{{pct}}', (((quotedPrice-commodity.baseline)/commodity.baseline)*100).toFixed(1))
-              : t.advisor.baselineNotice.replace('{{commodity}}', lang === 'tl' ? commodity.tagalog : commodity.name).replace('{{baseline}}', commodity.baseline.toString())}
+              : t.advisor.baselineNotice.replace('{{commodity}}', lang === 'tl' ? (t.commodities as any)[commodity.name] || commodity.name : commodity.name).replace('{{baseline}}', commodity.baseline.toString())}
           </p>
         </div>
       </div>

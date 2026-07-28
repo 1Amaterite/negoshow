@@ -79,7 +79,7 @@ export default function DashboardPage() {
   });
 
   const VARIANCE_DATA = dynamicCommodities.map((c: any) => ({
-    name: (t.commodities as Record<string, string>)[c.shortLabel] || c.shortLabel,
+    name: (t.commodities as Record<string, string>)[c.name] || c.name,
     "Middleman Asking Price": c.vendorQuoteAvg,
     "Baseline (Retail Price)": c.baseline,
     variancePct: parseFloat(c.change.toFixed(1)),
@@ -135,7 +135,7 @@ export default function DashboardPage() {
                 <p className="text-xs text-muted-foreground mb-1">{t.dashboard.volatileCommodities}</p>
                 <p className="text-xl font-extrabold text-red-600">{volatileCount} <span className="text-sm text-muted-foreground font-normal">{t.common.of} {dynamicCommodities.length}</span></p>
               </div>
-              <p className="text-xs text-red-600 font-semibold mt-2 truncate">{dynamicCommodities.filter((c: any) => c.volatility === "High").map((c: any) => (t.commodities as Record<string, string>)[c.shortLabel] || c.shortLabel).join(", ") || t.common.none}</p>
+              <p className="text-xs text-red-600 font-semibold mt-2 truncate">{dynamicCommodities.filter((c: any) => c.volatility === "High").map((c: any) => (t.commodities as Record<string, string>)[c.name] || c.name).join(", ") || t.common.none}</p>
             </div>
             
             <div className="bg-card rounded-2xl p-4 border border-border shadow-sm flex flex-col justify-between">
@@ -348,7 +348,7 @@ export default function DashboardPage() {
               <button key={c.id} onClick={()=>setPredCId(c.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border whitespace-nowrap transition-all shrink-0 hover:shadow-sm active:scale-95 ${
                   predC?.id===c.id?"bg-primary text-white border-primary":"bg-card border-border hover:bg-muted/50 text-foreground"
-                }`}><CommodityImage commodity={c} size="sm" className="!w-6 !h-6 !rounded-md"/>{(t.commodities as Record<string, string>)[c.shortLabel] || c.shortLabel}</button>
+                }`}><CommodityImage commodity={c} size="sm" className="!w-6 !h-6 !rounded-md"/>{(t.commodities as Record<string, string>)[c.name] || c.name}</button>
             ))}
           </div>
           <div className="bg-card rounded-xl border border-border overflow-hidden">
