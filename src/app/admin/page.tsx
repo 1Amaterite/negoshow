@@ -55,6 +55,12 @@ export default function AdminPage() {
   const [alerts, setAlerts] = useState<any[]>([]);
   const dismissedPendingAlert = useRef(false);
 
+  // New Log states
+  const [logsPage, setLogsPage] = useState(1);
+  const [logsTotalPages, setLogsTotalPages] = useState(1);
+  const [logsSearch, setLogsSearch] = useState("");
+  const [logsStatus, setLogsStatus] = useState("all");
+
   // Upload form state
   const [sourceOffice, setSourceOffice] = useState("");
   const [bulletinDate, setBulletinDate] = useState("");
@@ -73,11 +79,17 @@ export default function AdminPage() {
       fetchValidationRecords();
       fetchUploads();
     }
-  }, [isAdmin, tab]);
+  }, [isAdmin, tab, logsPage, logsStatus]);
 
   const fetchValidationRecords = async () => {
     try {
-      const res = await fetch('/api/admin/validation');
+      const query = new URLSearchParams({
+        page: logsPage.toString(),
+        limit: "20",
+        search: logsSearch,
+        status: logsStatus
+      });
+      const res = await fetch(`/api/admin/validation?${query}`);
       const json = await res.json();
       if (json.data) {
         setRecords(json.data);
@@ -94,6 +106,9 @@ export default function AdminPage() {
       }
       if (json.logs) {
         setDone(json.logs);
+      }
+      if (json.pagination) {
+        setLogsTotalPages(json.pagination.totalPages);
       }
     } catch(e) {}
   };
@@ -255,6 +270,40 @@ export default function AdminPage() {
         setRecords(p => [rec, ...p]);
       }
     }
+  };
+
+  const undoRec = async (id: number) => {
+    try {
+      await fetch('/api/admin/validation', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action: 'undo' })
+      });
+      fetchValidationRecords();
+    } catch (e) {
+      alert('Failed to undo record');
+    }
+  };
+
+  const exportCSV = () => {
+    if (done.length === 0) return;
+    const headers = ["ID", "Commodity", "Market", "Price", "Date", "Status", "Flag Reason"];
+    const rows = done.map(r => [
+      r.id,
+      r.commodity?.name || "",
+      r.market?.name || "",
+      r.checkedPrice,
+      new Date(r.checkedAt).toLocaleDateString(),
+      r.validationStatus,
+      r.flagReason || ""
+    ]);
+    const csvContent = [headers, ...rows].map(e => e.map(item => `"${String(item).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `validation_logs_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
   };
 
   const pending = records;
@@ -548,27 +597,105 @@ export default function AdminPage() {
             </p>
           </div>
 
+          {/* Search, Filter & Export */}
+          <div className="flex flex-col md:flex-row gap-3">
+            <div className="flex-1 flex gap-2">
+              <input 
+                type="text" 
+                placeholder={lang === "en" ? "Search commodity or market..." : "Maghanap ng kalakal o pamilihan..."}
+                value={logsSearch}
+                onChange={(e) => setLogsSearch(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && fetchValidationRecords()}
+                className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+              />
+              <button 
+                onClick={fetchValidationRecords}
+                className="bg-primary text-white px-4 py-2 rounded-lg text-xs font-bold active:scale-95 transition-all">
+                Search
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <select 
+                value={logsStatus} 
+                onChange={(e) => { setLogsStatus(e.target.value); setLogsPage(1); }}
+                className="bg-background border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+                <option value="all">{lang === "en" ? "All Status" : "Lahat ng Status"}</option>
+                <option value="approved">{t.admin.validate.statusApproved}</option>
+                <option value="rejected">{t.admin.validate.statusRejected}</option>
+              </select>
+              <button 
+                onClick={exportCSV}
+                className="bg-card border border-border px-4 py-2 rounded-lg text-xs font-bold text-foreground active:scale-95 transition-all flex items-center gap-1">
+                CSV
+              </button>
+            </div>
+          </div>
+
           {done.length > 0 ? (
             <div>
               <SL>{t.admin.validate.completed || "Completed Transactions"}</SL>
-              <div className="space-y-2">
-                {done.map((r, i)=>(
-                  <div key={r.id || i} className="flex items-center justify-between bg-card rounded-xl px-4 py-3 border border-border shadow-sm">
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">{r.commodity?.name} — ₱{Number(r.checkedPrice).toFixed(2)}</p>
-                      <p className="text-xs text-muted-foreground">{r.market?.name} · {new Date(r.checkedAt).toLocaleDateString()}</p>
+              <div className="space-y-3">
+                {done.map((r, i) => {
+                  const commConfig = COMMODITIES.find(c => c.id === r.commodity?.name);
+                  const displayName = commConfig ? (lang === "en" ? commConfig.en : commConfig.tl) : r.commodity?.name;
+                  
+                  return (
+                    <div key={r.id || i} className="flex flex-col sm:flex-row sm:items-center justify-between bg-card rounded-xl px-4 py-3 border border-border shadow-sm gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-start justify-between sm:justify-start gap-2">
+                          <p className="text-sm font-semibold text-foreground">{displayName} — ₱{Number(r.checkedPrice).toFixed(2)}</p>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border sm:hidden ${r.validationStatus==="approved"?"bg-green-100 text-green-700 border-green-200":"bg-red-100 text-red-700 border-red-200"}`}>
+                            {r.validationStatus==="approved"?t.admin.validate.statusApproved:t.admin.validate.statusRejected}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">{r.market?.name} · {new Date(r.checkedAt).toLocaleString()}</p>
+                        {r.flagReason && (
+                          <div className="flex items-start gap-1 mt-1.5 p-1.5 bg-amber-50 rounded-md border border-amber-100">
+                            <AlertTriangle size={12} className="text-amber-600 mt-0.5 shrink-0"/>
+                            <p className="text-[10px] text-amber-700 leading-tight">Flagged: {r.flagReason}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-end sm:justify-center gap-3 border-t sm:border-t-0 border-border pt-3 sm:pt-0">
+                        <span className={`hidden sm:inline-block text-xs font-bold px-2.5 py-1 rounded-full border ${r.validationStatus==="approved"?"bg-green-100 text-green-700 border-green-200":"bg-red-100 text-red-700 border-red-200"}`}>
+                          {r.validationStatus==="approved"?t.admin.validate.statusApproved:t.admin.validate.statusRejected}
+                        </span>
+                        <button 
+                          onClick={() => undoRec(r.id)}
+                          className="text-xs font-semibold text-muted-foreground hover:text-foreground underline decoration-muted-foreground/30 hover:decoration-foreground transition-colors">
+                          {lang === "en" ? "Undo" : "I-undo"}
+                        </button>
+                      </div>
                     </div>
-                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full border ${r.validationStatus==="approved"?"bg-green-100 text-green-700 border-green-200":"bg-red-100 text-red-700 border-red-200"}`}>
-                      {r.validationStatus==="approved"?t.admin.validate.statusApproved:t.admin.validate.statusRejected}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+
+              {/* Pagination */}
+              {logsTotalPages > 1 && (
+                <div className="flex items-center justify-between mt-6 bg-card px-4 py-2 rounded-xl border border-border">
+                  <button 
+                    disabled={logsPage <= 1}
+                    onClick={() => setLogsPage(p => Math.max(1, p - 1))}
+                    className="text-xs font-bold text-foreground disabled:text-muted-foreground/50 transition-colors p-2">
+                    {lang === "en" ? "Previous" : "Nakaraan"}
+                  </button>
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    {lang === "en" ? `Page ${logsPage} of ${logsTotalPages}` : `Pahina ${logsPage} ng ${logsTotalPages}`}
+                  </span>
+                  <button 
+                    disabled={logsPage >= logsTotalPages}
+                    onClick={() => setLogsPage(p => Math.min(logsTotalPages, p + 1))}
+                    className="text-xs font-bold text-foreground disabled:text-muted-foreground/50 transition-colors p-2">
+                    {lang === "en" ? "Next" : "Susunod"}
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-10 bg-card rounded-xl border border-border border-dashed">
               <p className="text-sm font-semibold text-muted-foreground">
-                {lang === "en" ? "No transactions logged yet." : "Wala pang nai-log na transaksyon."}
+                {lang === "en" ? "No transactions found." : "Walang nahanap na transaksyon."}
               </p>
             </div>
           )}
