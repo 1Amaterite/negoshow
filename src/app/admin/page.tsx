@@ -244,6 +244,43 @@ export default function AdminPage() {
       alert('Failed to delete document');
     }
   };
+  const viewError = async (id: number) => {
+    try {
+      const res = await fetch(`/api/bulletins/error?id=${id}`);
+      const json = await res.json();
+      alert(json.errorReason || "Unknown error");
+    } catch(e) {
+      alert("Failed to load error details");
+    }
+  };
+
+  const retryDoc = async (id: number) => {
+    if (!confirm("Are you sure you want to retry processing this bulletin?")) return;
+    
+    // Optimistic UI update
+    setUploads((p) => p.map((d) => d.id === id ? { ...d, status: "processing" } : d));
+    
+    try {
+      const res = await fetch('/api/bulletins/retry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      
+      if (!res.ok) throw new Error("Retry failed");
+      
+      setTimeout(() => {
+        fetchAlerts();
+        fetchValidationRecords();
+        fetchUploads();
+      }, 5000); // Check again after 5 seconds to see if it finished
+    } catch (e) {
+      console.error(e);
+      alert('Failed to retry processing');
+      fetchUploads(); // Revert optimistic UI
+    }
+  };
+
   const updateRec = async (id: number, status: "approved"|"rejected") => {
     // 1. Optimistic UI update
     const rec = records.find(r => r.id === id);
@@ -450,7 +487,21 @@ export default function AdminPage() {
 
               {/* Commodities */}
               <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">{t.admin.upload.commodities}</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block">{t.admin.upload.commodities}</label>
+                  <button 
+                    onClick={() => {
+                      if (selectedComms.length === COMMODITIES.length) {
+                        setSelectedComms([]);
+                      } else {
+                        setSelectedComms(COMMODITIES.map(c => c.id));
+                      }
+                    }}
+                    className="text-[10px] font-bold text-primary active:scale-95 transition-transform"
+                  >
+                    {selectedComms.length === COMMODITIES.length ? (lang === 'en' ? "Deselect All" : "I-deselect Lahat") : (lang === 'en' ? "Select All" : "Piliin Lahat")}
+                  </button>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {COMMODITIES.map((comm)=>{
                     const active = selectedComms.includes(comm.id);
@@ -496,13 +547,25 @@ export default function AdminPage() {
                         </div>
                       </div>
                     </div>
-                    {(doc.status==="validated"||doc.status==="processing") && (
+                    {(doc.status==="validated"||doc.status==="processing"||doc.status==="failed") && (
                       <div className="flex gap-2 px-4 pb-3">
                         {doc.status==="validated" && (
                           <button onClick={()=>publishDoc(doc.id)}
                             className="flex-1 flex items-center justify-center gap-1 bg-primary text-white text-xs font-bold py-2 rounded-lg active:scale-[0.97] transition-all">
                             <Check size={12}/>{t.admin.upload.publish}
                           </button>
+                        )}
+                        {doc.status==="failed" && (
+                          <>
+                            <button onClick={()=>retryDoc(doc.id)}
+                              className="flex-1 flex items-center justify-center gap-1 bg-amber-500 text-white text-xs font-bold py-2 rounded-lg active:scale-[0.97] transition-all">
+                              <RefreshCw size={12}/>{lang === 'en' ? "Retry" : "Subukan Muli"}
+                            </button>
+                            <button onClick={()=>viewError(doc.id)}
+                              className="flex-1 flex items-center justify-center gap-1 bg-card border border-border text-foreground text-xs font-bold py-2 rounded-lg active:scale-[0.97] transition-all">
+                              <AlertTriangle size={12}/>{lang === 'en' ? "View Error" : "Tingnan ang Error"}
+                            </button>
+                          </>
                         )}
                         <button onClick={()=>deleteDoc(doc.id)}
                           className="flex items-center justify-center gap-1 bg-card border border-red-200 text-red-600 text-xs font-bold px-3 py-2 rounded-lg active:scale-[0.97] transition-all">

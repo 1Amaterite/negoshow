@@ -22,7 +22,8 @@ export default function TransparencyPage() {
     queryKey: ['bulletins'],
     queryFn: async () => {
       const res = await fetch('/api/bulletins');
-      return await res.json();
+      const json = await res.json();
+      return json.data || [];
     },
     staleTime: 300000
   });
