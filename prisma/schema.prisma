@@ -45,6 +45,7 @@ model Market {
   name String
 
   vendorChecks VendorCheck[]
+  retailPrices RetailPrice[]
 }
 
 model RetailPrice {

@@ -13,7 +13,7 @@ export async function GET(req: Request) {
         observedDate: { gte: thirtyDaysAgo },
         isVerified: true
       },
-      include: { commodity: true },
+      include: { commodity: true, market: true },
       orderBy: { observedDate: 'desc' }
     });
 

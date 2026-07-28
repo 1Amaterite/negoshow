@@ -24,6 +24,7 @@ export default function DashboardPage() {
   const { data: dynamicCommodities = [], isLoading: isCommsLoading } = useQuery({
     queryKey: ['commodities'],
     queryFn: async () => {
+      const res = await fetch('/api/commodities');
       const data = await res.json();
       if (!predCId && data.length > 0) setPredCId(data[0].id);
       if (!descCId && data.length > 0) setDescCId(data[0].id);
