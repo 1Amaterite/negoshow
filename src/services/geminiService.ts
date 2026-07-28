@@ -31,8 +31,15 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
     
     const mimeType = response.headers.get('content-type') || 'application/pdf';
 
+    const bulletin = await prisma.bulletinRecord.findUnique({ where: { id: bulletinId } });
+    if (!bulletin) throw new Error("Bulletin not found");
+
     const validCommodities = await prisma.commodity.findMany({ select: { name: true } });
-    const commodityNames = validCommodities.map(c => c.name).join(', ');
+    const targetCommodities = bulletin.commodities && bulletin.commodities.length > 0 
+      ? bulletin.commodities 
+      : validCommodities.map(c => c.name);
+    
+    const commodityNames = targetCommodities.join(', ');
 
     const prompt = `
       You are an expert data analyst for Philippine agricultural commodities. Analyze this Department of Agriculture (DA) "DAILY PRICE INDEX" bulletin document and extract the prevailing retail prices.
@@ -172,7 +179,6 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
     let observedDate = new Date();
     
     // First try to use the user-provided date from the bulletin record
-    const bulletin = await prisma.bulletinRecord.findUnique({ where: { id: bulletinId } });
     if (bulletin?.bulletinDate) {
       const parsedUserDate = new Date(bulletin.bulletinDate);
       if (!isNaN(parsedUserDate.getTime())) {
@@ -221,6 +227,12 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
 
       if (!commodity) {
         console.log(`[GeminiService] Commodity not found in DB: ${item.commodity}, skipping.`);
+        continue;
+      }
+
+      // Ensure the commodity was selected by the user for this bulletin
+      if (!targetCommodities.includes(commodity.name)) {
+        console.log(`[GeminiService] Skipping ${commodity.name} because it was not selected in the bulletin.`);
         continue;
       }
 

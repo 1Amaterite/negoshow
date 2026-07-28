@@ -7,7 +7,7 @@ import { LogOut, Upload, Database, CheckCircle, FilePlus, Check, MapPin, Chevron
 import { PageHeader, SL } from "@/components/ui";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useTranslation } from "@/context/LanguageContext";
-import { COMMODITY_NAMES, COVERAGE_AREAS } from "@/lib/constants";
+import { COMMODITIES, COVERAGE_AREAS } from "@/lib/constants";
 
 type AdminTab = "upload" | "validate" | "logs";
 type DocStatus = "processing" | "validated" | "published" | "failed";
@@ -290,7 +290,9 @@ export default function AdminPage() {
           {alerts.map(alert => (
             <div key={alert.id} className="bg-white border border-border/50 border-l-4 border-l-red-500 shadow-2xl p-4 rounded-xl flex items-start gap-3 pointer-events-auto transition-all duration-300 ease-out">
               <AlertTriangle size={18} className="text-red-600 shrink-0 mt-0.5" />
-              <div className="flex-1 text-sm font-bold text-slate-800 leading-snug">{alert.message}</div>
+              <div className="flex-1 text-sm font-bold text-slate-800 leading-snug min-w-0 break-words">
+                <p className="line-clamp-4">{alert.message}</p>
+              </div>
               <button onClick={() => dismissAlert(alert.id)} className="text-slate-400 hover:text-red-600 transition-colors p-1 bg-slate-50 hover:bg-red-50 rounded-full shrink-0">
                 <X size={14} />
               </button>
@@ -401,14 +403,15 @@ export default function AdminPage() {
               <div>
                 <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">{t.admin.upload.commodities}</label>
                 <div className="flex flex-wrap gap-2">
-                  {COMMODITY_NAMES.map((name)=>{
-                    const active = selectedComms.includes(name);
+                  {COMMODITIES.map((comm)=>{
+                    const active = selectedComms.includes(comm.id);
+                    const displayName = lang === "en" ? comm.en : comm.tl;
                     return (
-                      <button key={name} onClick={()=>toggleComm(name)}
+                      <button key={comm.id} onClick={()=>toggleComm(comm.id)}
                         className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all active:scale-95 ${
                           active?"bg-primary text-white border-primary":"bg-card border-border text-foreground"
                         }`}>
-                        {active&&<Check size={10} className="inline mr-1"/>}{name}
+                        {active&&<Check size={10} className="inline mr-1"/>}{displayName}
                       </button>
                     );
                   })}

@@ -52,7 +52,8 @@ export default function ProcurementPage() {
     queryFn: async () => {
       const res = await fetch(`/api/advisor/tips?lang=${lang}`);
       return await res.json();
-    }
+    },
+    staleTime: 1000 * 60 * 60, // 1 hour cache to match backend
   });
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading procurement data...</div>;
@@ -153,7 +154,7 @@ export default function ProcurementPage() {
                   };
 
                   return (
-                    <div key={i} className="group flex items-start gap-3.5 hover:bg-slate-50/80 transition-all duration-300 rounded-lg px-3 py-3 cursor-default border-b border-border/40 last:border-0">
+                    <button key={i} onClick={() => tip.commodityId && router.push(`/advisor?id=${tip.commodityId}`)} className="w-full text-left group flex items-start gap-3.5 hover:bg-slate-50/80 transition-all duration-300 rounded-lg px-3 py-3 cursor-pointer border-b border-border/40 last:border-0 focus:outline-none focus:ring-2 focus:ring-amber-500/20">
                       <div className={`shrink-0 p-2.5 rounded-full transition-transform duration-300 group-hover:scale-110 ${getColor(tip.icon)}`}>
                         <DynamicIcon name={tip.icon} size={18} />
                       </div>
@@ -165,7 +166,7 @@ export default function ProcurementPage() {
                           {tip.bodyEn ? (lang === 'tl' ? tip.body : tip.bodyEn) : tip.body}
                         </p>
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>

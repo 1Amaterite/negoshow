@@ -1,6 +1,14 @@
 import { DocKalagayan } from "./types";
 
-export const COMMODITY_NAMES = ["Sibuyas Pula","Sibuyas Puti","Bawang","Luya","Patatas"];
+export const COMMODITIES = [
+  { id: "Red Onions", en: "Red Onions", tl: "Sibuyas Pula" },
+  { id: "White Onions", en: "White Onions", tl: "Sibuyas Puti" },
+  { id: "Garlic", en: "Garlic", tl: "Bawang" },
+  { id: "Ginger", en: "Ginger", tl: "Luya" },
+  { id: "Potatoes", en: "Potatoes", tl: "Patatas" }
+];
+
+export const COMMODITY_NAMES = COMMODITIES.map(c => c.id);
 
 export const COVERAGE_AREAS = ["Metro Manila","Pasay City","Makati City","Quezon City","Caloocan City","Marikina City"];
 
