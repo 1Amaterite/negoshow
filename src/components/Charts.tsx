@@ -12,4 +12,6 @@ export {
   CartesianGrid,
   ReferenceLine,
   Cell,
+  AreaChart,
+  Area
 } from "recharts";

@@ -16,6 +16,7 @@ export async function GET() {
           where: { isVerified: true },
           orderBy: { checkedAt: 'desc' },
           take: 50,
+          include: { market: true },
         },
       }
     });
@@ -48,11 +49,23 @@ export async function GET() {
       if (Math.abs(change) > 5) volatility = "Medium";
       if (Math.abs(change) > 10) volatility = "High";
 
-      const sources: {name: string, price: number}[] = [];
-      if (vendorQuoteAvg > 0) {
-        sources.push({name: "General Market (Avg)", price: vendorQuoteAvg});
+      const sources: {name: string, price: number, distance?: string}[] = [];
+      if (c.vendorChecks.length > 0) {
+        const marketPrices: Record<string, number[]> = {};
+        c.vendorChecks.forEach((vc: any) => {
+          const mName = vc.market?.name || "General Market";
+          if (!marketPrices[mName]) marketPrices[mName] = [];
+          marketPrices[mName].push(vc.checkedPrice);
+        });
+        
+        for (const [mName, prices] of Object.entries(marketPrices)) {
+          const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
+          sources.push({ name: mName, price: avg, distance: "2.4 km" });
+        }
+        // Sort by lowest price first
+        sources.sort((a, b) => a.price - b.price);
       } else {
-        sources.push({name: "General Market", price: latestPrice});
+        sources.push({name: "General Market", price: latestPrice, distance: "-"});
       }
 
       return {

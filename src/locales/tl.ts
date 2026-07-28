@@ -153,7 +153,8 @@ export const tl: TranslationKeys = {
       avg30Day: "30-araw na karaniwan",
       difference: "Pagkakaiba",
       market: "Palengke",
-      lower: "₱{{amt}}/kg na mas mababa"
+      lower: "₱{{amt}}/kg mas mababa",
+      higher: "₱{{amt}}/kg mas mataas"
     },
     recommendationCard: {
       waitReason: "Ang presyo ay {{change}}% na mas mataas at maaaring patuloy pang tumaas. Ihambing ang mga alok at makipagtawaran bago bumili.",

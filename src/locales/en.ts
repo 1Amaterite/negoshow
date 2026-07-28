@@ -151,7 +151,8 @@ export const en = {
       avg30Day: "30-day average",
       difference: "Difference",
       market: "Market",
-      lower: "₱{{amt}}/kg lower"
+      lower: "₱{{amt}}/kg lower",
+      higher: "₱{{amt}}/kg higher"
     },
     recommendationCard: {
       waitReason: "The price is {{change}}% higher and may continue to rise. Compare offers and negotiate before buying.",
