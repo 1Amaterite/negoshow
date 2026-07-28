@@ -26,7 +26,7 @@ export async function GET(req: Request) {
     let csvContent = "Type,Date,Commodity,Market,Price(PHP)\n";
 
     retailPrices.forEach(rp => {
-        csvContent += `Baseline,${rp.observedDate.toISOString()},${rp.commodity.name},${rp.market.name},${rp.price}\n`;
+        csvContent += `Baseline,${rp.observedDate.toISOString()},${rp.commodity.name},${rp.market?.name || 'Unknown'},${rp.price}\n`;
     });
 
     vendorChecks.forEach(vc => {
