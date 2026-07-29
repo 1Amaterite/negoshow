@@ -1,32 +1,12 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { getLastUpdate } from '@/lib/services/analytics';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const latestBulletin = await prisma.bulletinRecord.findFirst({
-      where: { processedStatus: 'PROCESSED' },
-      orderBy: { uploadDate: 'desc' }
-    });
-    
-    if (latestBulletin) {
-      return NextResponse.json({ lastUpdate: latestBulletin.uploadDate.toISOString() });
-    }
-    
-    // Fallback if no bulletins yet
-    const latestRetail = await prisma.retailPrice.findFirst({
-      where: { isVerified: true },
-      orderBy: { observedDate: 'desc' }
-    });
-    
-    if (latestRetail) {
-      return NextResponse.json({ lastUpdate: latestRetail.observedDate.toISOString() });
-    }
-    
-    return NextResponse.json({ lastUpdate: new Date().toISOString() });
+    const data = await getLastUpdate();
+    return NextResponse.json(data);
   } catch (error) {
     console.error("Failed to fetch last update:", error);
     return NextResponse.json({ lastUpdate: new Date().toISOString() });

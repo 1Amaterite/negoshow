@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { getDescriptivePrices } from '@/lib/services/analytics';
 
 export async function GET(req: Request) {
   try {
@@ -13,122 +11,13 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Missing commodityId" }, { status: 400 });
     }
 
-    let commodityId = parseInt(commodityIdStr, 10);
-    if (isNaN(commodityId)) {
-      const c = await prisma.commodity.findFirst({
-        where: { name: { contains: commodityIdStr.replace(/-/g, ' '), mode: 'insensitive' } }
-      });
-      if (!c) return NextResponse.json({ error: "Commodity not found" }, { status: 404 });
-      commodityId = c.id;
-    }
-
-    const days = parseInt(daysStr, 10);
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - days);
-
-    const whereClause: any = {
-      commodityId,
-      isVerified: true,
-      observedDate: { gte: cutoffDate }
-    };
-
-    const prices = await prisma.retailPrice.findMany({
-      where: whereClause,
-      orderBy: { observedDate: 'asc' },
-      include: { sourceBulletin: true }
-    });
-
-    const vendorWhereClause: any = {
-      commodityId,
-      isVerified: true,
-      checkedAt: { gte: cutoffDate }
-    };
-
-    const vendorChecks = await prisma.vendorCheck.findMany({
-      where: vendorWhereClause,
-      orderBy: { checkedAt: 'asc' },
-      include: { market: true }
-    });
-
-    // Fetch the most recent baseline price prior to the cutoff date to use as a fallback
-    const priorPriceRecord = await prisma.retailPrice.findFirst({
-      where: {
-        commodityId,
-        isVerified: true,
-        observedDate: { lt: cutoffDate }
-      },
-      orderBy: { observedDate: 'desc' }
-    });
-
-    let lastKnownBaseline = priorPriceRecord?.price || null;
-
-    if (prices.length === 0 && vendorChecks.length === 0) {
-      return NextResponse.json({ chartData: [], kpi: { median: 0, highest: 0, lowest: 0 } });
-    }
-
-    // Group by date
-    const dailyData: Record<string, { baseline: number[], asking: number[] }> = {};
-    
-    for (const p of prices) {
-      const dStr = p.observedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      if (!dailyData[dStr]) dailyData[dStr] = { baseline: [], asking: [] };
-      dailyData[dStr].baseline.push(p.price);
-    }
-
-    for (const v of vendorChecks) {
-      const dStr = v.checkedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      if (!dailyData[dStr]) dailyData[dStr] = { baseline: [], asking: [] };
-      dailyData[dStr].asking.push(v.checkedPrice);
-    }
-
-    // Generate array of all days in the timeframe
-    const allDays = [];
-    for (let i = 0; i < days; i++) {
-      const d = new Date(cutoffDate);
-      d.setDate(d.getDate() + i + 1);
-      allDays.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-    }
-
-    const chartData = allDays.map(date => {
-      const vals = dailyData[date] || { baseline: [], asking: [] };
-      
-      const avgBaseline = vals.baseline.length > 0 ? vals.baseline.reduce((a, b) => a + b, 0) / vals.baseline.length : null;
-      if (avgBaseline !== null) {
-        lastKnownBaseline = avgBaseline;
-      }
-      
-      const avgAsking = vals.asking.length > 0 ? vals.asking.reduce((a, b) => a + b, 0) / vals.asking.length : null;
-      
-      return { 
-        date, 
-        price: lastKnownBaseline !== null ? Math.round(lastKnownBaseline) : null,
-        askingPrice: avgAsking !== null ? Math.round(avgAsking) : null
-      };
-    });
-
-    const allPrices = prices.map(p => p.price).sort((a, b) => a - b);
-    const lowest = allPrices[0];
-    const highest = allPrices[allPrices.length - 1];
-    
-    let median = 0;
-    const mid = Math.floor(allPrices.length / 2);
-    if (allPrices.length % 2 === 0) {
-      median = (allPrices[mid - 1] + allPrices[mid]) / 2;
-    } else {
-      median = allPrices[mid];
-    }
-
-    return NextResponse.json({
-      chartData,
-      kpi: {
-        median: Math.round(median),
-        highest: Math.round(highest),
-        lowest: Math.round(lowest)
-      }
-    });
-
-  } catch (error) {
+    const data = await getDescriptivePrices(commodityIdStr, daysStr);
+    return NextResponse.json(data);
+  } catch (error: any) {
     console.error("Failed to fetch descriptive prices:", error);
+    if (error.message === "Commodity not found") {
+       return NextResponse.json({ error: error.message }, { status: 404 });
+    }
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

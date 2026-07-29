@@ -74,7 +74,7 @@ export default function CheckerPage() {
     } catch (err) {
       console.error("Failed to save price check:", err);
       const variance = (parseFloat(quotedPrice) - checkerCommodity.baseline) / checkerCommodity.baseline;
-      setCheckResult(variance > 0.15 ? "flagged" : "fair");
+      setCheckResult(variance > 0.10 ? "flagged" : "fair");
       setCheckerStep("result");
       fetchPeers();
     }
@@ -153,7 +153,7 @@ export default function CheckerPage() {
 
           <div className="dashboard-updated flex items-center gap-2 bg-card rounded-xl px-4 py-3 border border-border">
             <Shield size={14} className="text-primary shrink-0"/>
-            <p className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{t.checker.source}: </span>DA Bulletin, {new Date().toLocaleDateString()} · {checkerLocationName || "Metro Manila"}</p>
+            <p className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">{t.checker.source}: </span>DA Bulletin, {checkerCommodity.baselineDate ? new Date(checkerCommodity.baselineDate).toLocaleDateString() : new Date().toLocaleDateString()} · {checkerLocationName || "Metro Manila"}</p>
           </div>
 
           <button onClick={() => router.push("/advisor?id=" + checkerCommodity.id + "&quote=" + quotedPrice)} className="w-full bg-primary text-white font-bold text-sm py-4 rounded-full flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
@@ -208,7 +208,7 @@ export default function CheckerPage() {
             return (
               <p className="text-xs text-muted-foreground mt-1.5 ml-1">
                 {t.checker.baseline}: ₱{checkerCommodity.baseline}/kg ·{" "}
-                {parseFloat(quotedPrice) > checkerCommodity.baseline * 1.15
+                {parseFloat(quotedPrice) > checkerCommodity.baseline * 1.10
                   ? <span className="text-red-600 font-semibold">{t.checker.higherThanBaseline}</span>
                   : <span className="text-green-700 font-semibold">{t.checker.withinRange}</span>}
               </p>

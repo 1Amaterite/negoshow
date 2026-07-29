@@ -35,9 +35,9 @@ export async function saveVendorQuote(commodityId: number, marketId: number, che
   // Fetch the latest baseline to determine if this quote should be flagged
   const baseline = await getLatestBaseline(commodityId);
   
-  // Basic flagging logic: flag if the checked price is strictly greater than the baseline price
-  const isFlagged = baseline ? checkedPrice > baseline.price : false;
-  const flagReason = isFlagged ? `Price is higher than baseline (₱${baseline?.price.toFixed(2)})` : null;
+  // Basic flagging logic: flag if the checked price exceeds the baseline price by >10%
+  const isFlagged = baseline ? checkedPrice > baseline.price * 1.10 : false;
+  const flagReason = isFlagged ? `Price exceeds baseline by >10% (₱${baseline?.price.toFixed(2)})` : null;
 
   return await prisma.vendorCheck.create({
     data: {

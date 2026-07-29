@@ -136,11 +136,3 @@ export function CommodityImage({
   );
 }
 
-export function TierBadge({ tier, icon: Icon, color }: { tier: string; icon: React.ElementType; color: string }) {
-  return (
-    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full border w-fit mb-3 ${color}`}>
-      <Icon size={11} />
-      <span className="text-[10px] font-bold uppercase tracking-widest">{tier}</span>
-    </div>
-  );
-}

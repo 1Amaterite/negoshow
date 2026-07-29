@@ -39,7 +39,7 @@ export async function checkDataDrought() {
   return { drought: false, message: "Data is fresh." };
 }
 
-export async function triggerProxyIngestion() {
+async function triggerProxyIngestion() {
   console.log('[DroughtService] Triggering Broad Source Scanning (Proxy Baseline Ingestion)...');
   
   // Get all active commodities and their latest prices

@@ -122,12 +122,16 @@ export const en = {
     kpis: {
       savings: "Potential savings",
       savingsDesc: "for every 10 kg of each commodity",
+      savingsTip: "Total money you could save by buying at the lowest market price compared to the baseline.",
       buyNow: "Ready to buy",
       buyNowDesc: "stable or decreasing prices",
+      buyNowTip: "Number of commodities with a stable or decreasing price trend, making them good to buy now.",
       markets: "Markets compared",
       marketsDesc: "nearby verified sources",
+      marketsTip: "Total number of unique markets supplying price data today.",
       volatile: "Highly volatile commodities",
-      volatileDesc: "needs close monitoring"
+      volatileDesc: "needs close monitoring",
+      volatileTip: "Commodities with price fluctuations over 10%, requiring careful purchasing decisions.",
     },
     dailyTips: "Daily Vendor Tips",
     todayPlan: {

@@ -124,12 +124,16 @@ export const tl: TranslationKeys = {
     kpis: {
       savings: "Potensyal na tipid",
       savingsDesc: "sa bawat 10 kg ng bawat kalakal",
+      savingsTip: "Kabuuan ng halagang matitipid mo kung bibili sa pinakamababang presyo sa palengke kumpara sa batayan.",
       buyNow: "Handa nang bilhin",
       buyNowDesc: "matatag o bumababang presyo",
+      buyNowTip: "Bilang ng mga kalakal na may matatag o pababang trend ng presyo, kaya magandang bilhin ngayon.",
       markets: "Mga pinaghambing na merkado",
       marketsDesc: "malalapit at beripikadong pinagmulan",
+      marketsTip: "Kabuuang bilang ng mga palengkeng nagbibigay ng datos ng presyo ngayon.",
       volatile: "Mga lubhang pabago-bagong kalakal",
-      volatileDesc: "pabago-bago ang presyo ng mga kalakal ngayon"
+      volatileDesc: "pabago-bago ang presyo ng mga kalakal ngayon",
+      volatileTip: "Mga kalakal na may pagbabago sa presyo na higit sa 10%, kaya nangangailangan ng masusing pagpapasya bago bumili.",
     },
     dailyTips: "Araw-araw na Tips",
     todayPlan: {
@@ -250,9 +254,9 @@ export const tl: TranslationKeys = {
     showPassword: "Ipakita ang password",
     capsLock: "Naka-on ang Caps Lock.",
     fixErrors: "Ayusin ang mga naka-highlight na field.",
-    invalidCredentials: "Hindi tugma ang username o password sa aming tala.",
-    failedAttempts: "Ilang beses nang nabigo ang pag-login. Suriin ang iyong detalye o makipag-ugnayan sa tagapangasiwa.",
-    tryAgain: "Hindi tugma ang username o password. Subukan muli.",
+    invalidCredentials: "Username or password do not match our records.",
+    failedAttempts: "Too many failed attempts. Check your details or contact the administrator.",
+    tryAgain: "Username or password do not match. Try again.",
     checking: "Nagche-check…",
     loginBtn: "Mag-login bilang Admin",
     footer: "Ang admin area ay para lamang sa mga awtorisadong tauhan ng NegoShow. Para sa access, makipag-ugnayan sa inyong system administrator."

@@ -39,7 +39,7 @@ function AdvisorContent() {
   if (isLoading || !commodity) return <div className="p-8 text-center text-muted-foreground text-sm">{t.advisor.loading}</div>;
 
   const cheapest = commodity.sources[0];
-  const isFlagged = quotedPrice > 0 && quotedPrice > commodity.baseline * 1.15;
+  const isFlagged = quotedPrice > 0 && quotedPrice > commodity.baseline * 1.10;
   const action = isFlagged ? "negotiate" : commodity.trend === "up" ? "monitor" : "buy";
   
   const cards = {

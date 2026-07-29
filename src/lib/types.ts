@@ -1,9 +1,4 @@
-export type Screen =
-  | "home" | "checker" | "dashboard" | "commodity"
-  | "advisor" | "procurement" | "transparency" | "admin" | "admin-login" | "more";
 
-export type ResultState = "fair" | "flagged" | null;
-export type AdminTab = "upload" | "validate";
 export type DocKalagayan = "processing" | "validated" | "published" | "rejected";
 
 export interface Commodity {

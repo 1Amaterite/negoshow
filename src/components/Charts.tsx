@@ -13,5 +13,6 @@ export {
   ReferenceLine,
   Cell,
   AreaChart,
-  Area
+  Area,
+  ComposedChart
 } from "recharts";

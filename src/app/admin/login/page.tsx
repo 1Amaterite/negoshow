@@ -14,7 +14,7 @@ export default function AdminLoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
-  const [error, setError] = useState("");
+  const [errorKey, setErrorKey] = useState<"fixErrors" | "failedAttempts" | "tryAgain" | "">("");
   const [fieldErrors, setFieldErrors] = useState<{ username?: string; password?: string }>({});
   const [loading, setLoading] = useState(false);
   const [attempts, setAttempts] = useState(0);
@@ -28,12 +28,12 @@ export default function AdminLoginPage() {
     if (!password) nextErrors.password = t.login.passwordRequired;
     if (Object.keys(nextErrors).length > 0) {
       setFieldErrors(nextErrors);
-      setError(t.login.fixErrors);
+      setErrorKey("fixErrors");
       return;
     }
 
     setLoading(true);
-    setError("");
+    setErrorKey("");
     setFieldErrors({});
     // Call NextAuth signIn
     const result = await signIn("credentials", {
@@ -45,11 +45,8 @@ export default function AdminLoginPage() {
     if (result?.error) {
       const nextAttempts = attempts + 1;
       setAttempts(nextAttempts);
-      setError(nextAttempts >= 3
-        ? t.login.failedAttempts
-        : t.login.tryAgain);
+      setErrorKey(nextAttempts >= 3 ? "failedAttempts" : "tryAgain");
       setPassword("");
-      setFieldErrors({ password: t.login.invalidCredentials });
       setLoading(false);
     } else {
       setAttempts(0);
@@ -72,7 +69,7 @@ export default function AdminLoginPage() {
         <div className="space-y-4">
           <div>
             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">{t.login.username}</label>
-            <input type="text" value={username} onChange={(e)=>{setUsername(e.target.value); setFieldErrors((p)=>({...p,username:undefined})); setError("");}} placeholder={t.login.usernamePlaceholder}
+            <input type="text" value={username} onChange={(e)=>{setUsername(e.target.value); setFieldErrors((p)=>({...p,username:undefined})); setErrorKey("");}} placeholder={t.login.usernamePlaceholder}
               autoComplete="username" aria-invalid={Boolean(fieldErrors.username)}
               className={`w-full bg-card border rounded-xl px-4 py-3.5 text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 transition-all ${fieldErrors.username?"border-red-400 focus:border-red-500 focus:ring-red-100":"border-border focus:border-primary focus:ring-primary/20"}`}/>
             {fieldErrors.username && <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldErrors.username}</p>}
@@ -80,7 +77,7 @@ export default function AdminLoginPage() {
           <div>
             <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide block mb-1.5">{t.login.password}</label>
             <div className="relative">
-              <input type={showPass?"text":"password"} value={password} onChange={(e)=>{setPassword(e.target.value); setFieldErrors((p)=>({...p,password:undefined})); setError("");}} placeholder={t.login.passwordPlaceholder}
+              <input type={showPass?"text":"password"} value={password} onChange={(e)=>{setPassword(e.target.value); setFieldErrors((p)=>({...p,password:undefined})); setErrorKey("");}} placeholder={t.login.passwordPlaceholder}
                 onKeyDown={(e)=>{ setCapsLock(e.getModifierState("CapsLock")); if(e.key==="Enter") handleLogin(); }} onKeyUp={(e)=>setCapsLock(e.getModifierState("CapsLock"))} autoComplete="current-password" aria-invalid={Boolean(fieldErrors.password)}
                 className={`w-full bg-card border rounded-xl px-4 py-3.5 pr-12 text-sm font-medium text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 transition-all ${fieldErrors.password?"border-red-400 focus:border-red-500 focus:ring-red-100":"border-border focus:border-primary focus:ring-primary/20"}`}/>
               {fieldErrors.password && <p className="mt-1.5 text-xs font-semibold text-red-600">{fieldErrors.password}</p>}
@@ -90,10 +87,10 @@ export default function AdminLoginPage() {
               </button>
             </div>
           </div>
-          {error && (
+          {errorKey && (
             <div className="flex items-center gap-2 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
               <AlertTriangle size={14} className="text-red-600 shrink-0"/>
-              <p className="text-xs text-red-700 font-semibold">{error}</p>
+              <p className="text-xs text-red-700 font-semibold">{t.login[errorKey]}</p>
             </div>
           )}
           <button onClick={handleLogin} disabled={loading}

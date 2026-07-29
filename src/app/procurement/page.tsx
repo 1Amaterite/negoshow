@@ -50,10 +50,35 @@ export default function ProcurementPage() {
   const { data: aiTips = [], isLoading: isTipsLoading, refetch: refetchTips, isFetching: isTipsFetching } = useQuery({
     queryKey: ['ai-tips', lang],
     queryFn: async () => {
+      const cacheKey = `negoshow-ai-tips-${lang}`;
+      const ONE_HOUR = 1000 * 60 * 60;
+      
+      if (typeof window !== 'undefined') {
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed && parsed.timestamp && parsed.data && parsed.data.length > 0) {
+              if (Date.now() - parsed.timestamp < ONE_HOUR) {
+                return parsed.data;
+              }
+            }
+          } catch (e) {}
+        }
+      }
+
       const res = await fetch(`/api/advisor/tips?lang=${lang}`);
-      return await res.json();
+      const data = await res.json();
+      
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(cacheKey, JSON.stringify({
+          timestamp: Date.now(),
+          data: data
+        }));
+      }
+      return data;
     },
-    staleTime: 1000 * 60 * 60, // 1 hour cache to match backend
+    staleTime: 1000 * 60 * 60, // Refetch in background if older than 1 hour
   });
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading procurement data...</div>;
@@ -101,10 +126,10 @@ export default function ProcurementPage() {
         <div key={tab} className="tab-transition">
         {tab==="overview" && <>
           <div className="procurement-kpis">
-            <div><span>{t.procurement.kpis.savings}</span><strong>₱{totalSavings.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong><small>{t.procurement.kpis.savingsDesc}</small></div>
-            <div><span>{t.procurement.kpis.buyNow}</span><strong>{buyNow}</strong><small>{t.procurement.kpis.buyNowDesc}</small></div>
-            <div><span>{t.procurement.kpis.markets}</span><strong>{markets}</strong><small>{t.procurement.kpis.marketsDesc}</small></div>
-            <div><span>{t.procurement.kpis.volatile}</span><strong className="text-red-600">{dynamicCommodities.filter((c: any)=>c.volatility==="High").length}</strong><small className="text-red-500 font-semibold">{t.procurement.kpis.volatileDesc}</small></div>
+            <div title={(t.procurement.kpis as any).savingsTip}><span>{t.procurement.kpis.savings}</span><strong className={totalSavings > 0 ? "text-green-600" : ""}>₱{totalSavings.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong><small>{t.procurement.kpis.savingsDesc}</small></div>
+            <div title={(t.procurement.kpis as any).buyNowTip}><span>{t.procurement.kpis.buyNow}</span><strong className={buyNow > 0 ? "text-green-600" : ""}>{buyNow}</strong><small>{t.procurement.kpis.buyNowDesc}</small></div>
+            <div title={(t.procurement.kpis as any).marketsTip}><span>{t.procurement.kpis.markets}</span><strong>{markets}</strong><small>{t.procurement.kpis.marketsDesc}</small></div>
+            <div title={(t.procurement.kpis as any).volatileTip}><span>{t.procurement.kpis.volatile}</span><strong className={dynamicCommodities.filter((c: any)=>c.volatility==="High").length > 0 ? "text-red-600" : "text-green-600"}>{dynamicCommodities.filter((c: any)=>c.volatility==="High").length}</strong><small className={dynamicCommodities.filter((c: any)=>c.volatility==="High").length > 0 ? "text-red-500 font-semibold" : "text-green-500 font-semibold"}>{t.procurement.kpis.volatileDesc}</small></div>
           </div>
 
           <div className="procurement-grid">
@@ -129,7 +154,7 @@ export default function ProcurementPage() {
             <div className="p-5 md:p-6">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="mb-0 text-lg font-extrabold text-foreground tracking-tight">{t.procurement.dailyTips}</h3>
-                <button onClick={() => refetchTips()} disabled={isTipsFetching} className="flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-100 px-3 py-1.5 rounded-full transition-colors disabled:opacity-50">
+                <button onClick={() => { if (typeof window !== 'undefined') localStorage.removeItem(`negoshow-ai-tips-${lang}`); refetchTips(); }} disabled={isTipsFetching} className="flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 border border-amber-100 px-3 py-1.5 rounded-full transition-colors disabled:opacity-50">
                   <Sparkles size={13} className={isTipsFetching ? "animate-spin" : ""} />
                   {isTipsFetching ? (lang === 'tl' ? "Nag-iisip..." : "Thinking...") : (lang === 'tl' ? "Bagong Tips" : "New Tips")}
                 </button>
