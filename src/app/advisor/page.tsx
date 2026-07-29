@@ -67,21 +67,23 @@ function AdvisorContent() {
           <p className="text-2xl font-extrabold mb-2">{card.label}</p>
           <p className="text-sm text-white/80 leading-relaxed">{card.desc}</p>
         </div>
-        <div>
-          <SL>{t.advisor.cheaperSource}</SL>
-          <div className="bg-green-50 rounded-xl border border-green-200 px-4 py-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="font-bold text-foreground">{cheapest.name}</p>
-              <p className="text-2xl font-extrabold text-green-700">₱{cheapest.price}<span className="text-sm text-green-600">/kg</span></p>
-            </div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1"><Shield size={11}/>{t.advisor.verifiedSource}</p>
-            {quotedPrice>0&&(
-              <div className="mt-3 bg-white/70 rounded-lg px-3 py-2 border border-green-200">
-                <p className="text-xs font-semibold text-green-800 flex items-center gap-1.5"><CircleDollarSign size={14} className="text-green-700"/> {t.advisor.savePer10kg.replace('{{amt}}', ((quotedPrice-cheapest.price)*10).toFixed(0))}</p>
+        {cheapest && (!quotedPrice || quotedPrice > cheapest.price) && (
+          <div>
+            <SL>{t.advisor.cheaperSource}</SL>
+            <div className="bg-green-50 rounded-xl border border-green-200 px-4 py-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="font-bold text-foreground">{cheapest.name}</p>
+                <p className="text-2xl font-extrabold text-green-700">₱{cheapest.price}<span className="text-sm text-green-600">/kg</span></p>
               </div>
-            )}
+              <p className="text-xs text-muted-foreground flex items-center gap-1"><Shield size={11}/>{t.advisor.verifiedSource}</p>
+              {quotedPrice>0&&(
+                <div className="mt-3 bg-white/70 rounded-lg px-3 py-2 border border-green-200">
+                  <p className="text-xs font-semibold text-green-800 flex items-center gap-1.5"><CircleDollarSign size={14} className="text-green-700"/> {t.advisor.savePer10kg.replace('{{amt}}', ((quotedPrice-cheapest.price)*10).toFixed(0))}</p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
         <div>
           <div className="flex items-center justify-between mb-3">
             <SL className="mb-0">{t.advisor.vendorTips}</SL>
