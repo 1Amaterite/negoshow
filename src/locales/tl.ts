@@ -124,16 +124,23 @@ export const tl: TranslationKeys = {
     kpis: {
       savings: "Pinakamalaking Tipid",
       savingsDesc: "kada kg sa {{item}}",
-      savingsTip: "Kalkulasyon: Hinahanap ang nag-iisang kalakal na may pinakamalaking ibinaba ng presyo kumpara sa opisyal na batayan at ipinapakita kung magkano ang tipid kada kilo.",
+      savingsPurpose: "Tumutulong na agad matukoy ang pinakasulit na kalakal sa merkado ngayon para malaman mo kung saan ilalaan ang iyong badyet.",
+      savingsComputation: "Ikinukumpara ang pinakamababang presyo ng lahat ng kalakal laban sa kanilang opisyal na batayan at ipinapakita ang may pinakamalaking ibinaba ng presyo (kada kilo).",
+      
       buyNow: "Pinakamainam Bilhin",
       buyNowDesc: "pinakamagandang trend ng presyo",
-      buyNowTip: "Kalkulasyon: Tinutukoy ang kalakal na may pinakamagandang bumababang trend ng presyo ngayon, hudyat na ito ang pinakamagandang oras para mamili.",
+      buyNowPurpose: "Naghuhudyat kung aling partikular na kalakal ang nasa pinakamagandang oras para bilhin bago pa man tumaas ang presyo.",
+      buyNowComputation: "Sinusuri ang trend ng presyo ng lahat ng kalakal sa nakalipas na 30 araw at pinipili ang may pinakamatarik na pagbaba.",
+      
       markets: "Pinakamurang Palengke",
       marketsDesc: "pinakamura para sa {{count}} kalakal",
-      marketsTip: "Kalkulasyon: Binibilang kung aling partikular na palengke ang pinakamura para sa pinakamaraming kalakal ngayon.",
+      marketsPurpose: "Itinuturo ka sa pinakasulit na lokasyon para mamili, na nakakatipid sa oras at gastos sa transportasyon.",
+      marketsComputation: "Binibilang kung ilang kalakal ang pinakamura sa bawat palengke at ipinapakita ang palengkeng nangunguna sa pinakamaraming murang kalakal.",
+      
       volatile: "Pinakamapanganib Bilhin",
       volatileDesc: "pinakapabago-bago ang presyo",
-      volatileTip: "Kalkulasyon: Sinusuri ang lahat ng kalakal at itinatampok ang isa na may pinakapabago-bago o mabilis tumaas na presyo bilang babala bago ka bumili.",
+      volatilePurpose: "Nagbibigay babala tungkol sa pinaka-hindi matatag na kalakal upang maipagpaliban mo ang pagbili ng maramihan o makatawad ng mas maigi.",
+      volatileComputation: "Sinusuri ang lahat ng kalakal na may mataas na volatility o malaking biglaang pagtaas ng presyo kamakailan at itinatampok ang pinakamatinding kaso."
     },
     dailyTips: "Araw-araw na Tips",
     todayPlan: {

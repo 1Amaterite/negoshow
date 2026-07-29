@@ -122,16 +122,23 @@ export const en = {
     kpis: {
       savings: "Biggest Saving",
       savingsDesc: "per kg on {{item}}",
-      savingsTip: "Computation: Looks at all items and finds the single commodity with the biggest price drop below the official baseline. Shows exactly how much you save per kilo.",
+      savingsPurpose: "Helps you instantly identify the most profitable deal in the market today so you know where to allocate your budget.",
+      savingsComputation: "Compares the lowest market price of all items against their official baseline. Displays the largest price drop (per kilo) among them.",
+      
       buyNow: "Top Buy Today",
       buyNowDesc: "best price trend",
-      buyNowTip: "Computation: Identifies the commodity with the most favorable decreasing price trend today, signaling it is the best time to stock up.",
+      buyNowPurpose: "Signals which specific commodity is currently at its best purchasing window before prices potentially go up.",
+      buyNowComputation: "Analyzes the recent 30-day price trend of all commodities and selects the one with the steepest downward trajectory.",
+      
       markets: "Best Overall Market",
       marketsDesc: "cheapest for {{count}} items",
-      marketsTip: "Computation: Counts which specific market is listed as the cheapest source for the highest number of commodities today.",
+      marketsPurpose: "Directs you to the most cost-effective location to buy your supplies, saving you time and transportation costs.",
+      marketsComputation: "Counts the number of commodities where each market offers the lowest price. Displays the market that ranks cheapest for the most items.",
+      
       volatile: "Highest Risk",
       volatileDesc: "most volatile",
-      volatileTip: "Computation: Scans all commodities and highlights the one with the most unstable or rapidly increasing prices to warn you before buying.",
+      volatilePurpose: "Warns you about the most unstable commodity so you can delay bulk purchases or negotiate more aggressively.",
+      volatileComputation: "Scans for commodities flagged with high volatility or the largest recent price spikes and highlights the most extreme case."
     },
     dailyTips: "Daily Vendor Tips",
     todayPlan: {

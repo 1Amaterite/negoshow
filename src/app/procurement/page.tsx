@@ -187,25 +187,72 @@ export default function ProcurementPage() {
         <div key={tab} className="tab-transition">
         {tab==="overview" && <>
           <div className="procurement-kpis">
-            <div title={(t.procurement.kpis as any).savingsTip}>
+            <div className="group relative cursor-help">
               <span>{t.procurement.kpis.savings}</span>
               <strong className={maxSaving > 0 ? "text-green-600" : ""}>₱{maxSaving.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
-              <small>{maxSavingCommodity ? t.procurement.kpis.savingsDesc.replace('{{item}}', (t.commodities as any)[maxSavingCommodity.name] || maxSavingCommodity.name) : t.procurement.kpis.savingsDesc}</small>
+              <small>{maxSavingCommodity ? t.procurement.kpis.savingsDesc.replace('{{item}}', (t.commodities as any)[maxSavingCommodity.name] || maxSavingCommodity.name) : (lang === 'tl' ? "Walang naitalang tipid" : "No savings found")}</small>
+              
+              <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 w-64 p-4 bg-zinc-900 text-zinc-100 text-[12px] rounded-xl shadow-2xl left-1/2 -translate-x-1/2 top-full mt-3 border border-zinc-800 hidden sm:block">
+                <div className="mb-2.5">
+                  <strong className="text-white block mb-0.5 text-[10px] uppercase tracking-widest text-zinc-400">{lang === 'tl' ? 'Layunin' : 'Purpose'}</strong>
+                  <p className="leading-relaxed">{(t.procurement.kpis as any).savingsPurpose}</p>
+                </div>
+                <div>
+                  <strong className="text-white block mb-0.5 text-[10px] uppercase tracking-widest text-zinc-400">{lang === 'tl' ? 'Kalkulasyon' : 'Computation'}</strong>
+                  <p className="leading-relaxed">{(t.procurement.kpis as any).savingsComputation}</p>
+                </div>
+              </div>
             </div>
-            <div title={(t.procurement.kpis as any).buyNowTip}>
+
+            <div className="group relative cursor-help">
               <span>{t.procurement.kpis.buyNow}</span>
               <strong className={topBuyCommodity?.trend === "down" ? "text-green-600" : ""}>{topBuyCommodity ? ((t.commodities as any)[topBuyCommodity.name] || topBuyCommodity.name) : "None"}</strong>
               <small>{t.procurement.kpis.buyNowDesc}</small>
+
+              <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 w-64 p-4 bg-zinc-900 text-zinc-100 text-[12px] rounded-xl shadow-2xl left-1/2 -translate-x-1/2 top-full mt-3 border border-zinc-800 hidden sm:block">
+                <div className="mb-2.5">
+                  <strong className="text-white block mb-0.5 text-[10px] uppercase tracking-widest text-zinc-400">{lang === 'tl' ? 'Layunin' : 'Purpose'}</strong>
+                  <p className="leading-relaxed">{(t.procurement.kpis as any).buyNowPurpose}</p>
+                </div>
+                <div>
+                  <strong className="text-white block mb-0.5 text-[10px] uppercase tracking-widest text-zinc-400">{lang === 'tl' ? 'Kalkulasyon' : 'Computation'}</strong>
+                  <p className="leading-relaxed">{(t.procurement.kpis as any).buyNowComputation}</p>
+                </div>
+              </div>
             </div>
-            <div title={(t.procurement.kpis as any).marketsTip}>
+
+            <div className="group relative cursor-help">
               <span>{t.procurement.kpis.markets}</span>
               <strong className="text-foreground truncate block max-w-full">{bestMarket || "None"}</strong>
               <small>{t.procurement.kpis.marketsDesc.replace('{{count}}', bestMarketCount.toString())}</small>
+
+              <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 w-64 p-4 bg-zinc-900 text-zinc-100 text-[12px] rounded-xl shadow-2xl left-1/2 -translate-x-1/2 top-full mt-3 border border-zinc-800 hidden sm:block">
+                <div className="mb-2.5">
+                  <strong className="text-white block mb-0.5 text-[10px] uppercase tracking-widest text-zinc-400">{lang === 'tl' ? 'Layunin' : 'Purpose'}</strong>
+                  <p className="leading-relaxed">{(t.procurement.kpis as any).marketsPurpose}</p>
+                </div>
+                <div>
+                  <strong className="text-white block mb-0.5 text-[10px] uppercase tracking-widest text-zinc-400">{lang === 'tl' ? 'Kalkulasyon' : 'Computation'}</strong>
+                  <p className="leading-relaxed">{(t.procurement.kpis as any).marketsComputation}</p>
+                </div>
+              </div>
             </div>
-            <div title={(t.procurement.kpis as any).volatileTip}>
+
+            <div className="group relative cursor-help">
               <span>{t.procurement.kpis.volatile}</span>
               <strong className={highestRiskCommodity?.volatility === "High" ? "text-red-600" : "text-amber-600"}>{highestRiskCommodity ? ((t.commodities as any)[highestRiskCommodity.name] || highestRiskCommodity.name) : "None"}</strong>
               <small className={highestRiskCommodity?.volatility === "High" ? "text-red-500 font-semibold" : "text-amber-500 font-semibold"}>{t.procurement.kpis.volatileDesc}</small>
+
+              <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 w-64 p-4 bg-zinc-900 text-zinc-100 text-[12px] rounded-xl shadow-2xl left-1/2 -translate-x-1/2 top-full mt-3 border border-zinc-800 hidden sm:block">
+                <div className="mb-2.5">
+                  <strong className="text-white block mb-0.5 text-[10px] uppercase tracking-widest text-zinc-400">{lang === 'tl' ? 'Layunin' : 'Purpose'}</strong>
+                  <p className="leading-relaxed">{(t.procurement.kpis as any).volatilePurpose}</p>
+                </div>
+                <div>
+                  <strong className="text-white block mb-0.5 text-[10px] uppercase tracking-widest text-zinc-400">{lang === 'tl' ? 'Kalkulasyon' : 'Computation'}</strong>
+                  <p className="leading-relaxed">{(t.procurement.kpis as any).volatileComputation}</p>
+                </div>
+              </div>
             </div>
           </div>
 
