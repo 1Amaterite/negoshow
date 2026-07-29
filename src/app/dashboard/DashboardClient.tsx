@@ -138,6 +138,29 @@ export default function DashboardClient({
   const todayPoint = processedPredData.find((d: any) => d.aktwal != null && d.hula != null);
   const latestInsight = processedPredData.length > 0 ? processedPredData[processedPredData.length - 1].insight : null;
 
+  const CustomDescTooltip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    const data = payload[0].payload;
+    return (
+      <div className="bg-background border border-border rounded-xl px-3 py-2 shadow-lg text-xs">
+        <div className="flex items-center gap-2 mb-1">
+          <p className="font-bold text-foreground">{label}</p>
+          {data.isCarriedOver && <span className="bg-amber-100 text-amber-700 text-[9px] uppercase px-1 rounded font-bold tracking-wider">Stale</span>}
+        </div>
+        {payload.map((p: any) => (
+          <p key={p.dataKey} className="font-semibold" style={{ color: p.color }}>
+            {p.name}: ₱{p.value}
+          </p>
+        ))}
+        {data.isCarriedOver && data.carriedFrom && (
+          <p className="text-[10px] text-muted-foreground mt-1 max-w-[140px] leading-tight">
+            *Baseline carried over from {data.carriedFrom}
+          </p>
+        )}
+      </div>
+    );
+  };
+
   if (isCommsLoading) return <div className="p-8 text-center text-muted-foreground">Loading dashboard data...</div>;
 
   return (
@@ -236,7 +259,7 @@ export default function DashboardClient({
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(114,121,110,0.15)"/>
                     <XAxis dataKey="date" tick={{fontSize:9,fill:"#72796e"}} axisLine={false} tickLine={false}/>
                     <YAxis tick={{fontSize:10,fill:"#72796e"}} axisLine={false} tickLine={false} width={45} tickFormatter={(v: any)=>`₱${v}`}/>
-                    <Tooltip contentStyle={{ borderRadius: '12px', fontSize: '12px', border: '1px solid #e2e8f0' }} />
+                    <Tooltip content={<CustomDescTooltip />} />
                     <Line type="monotone" dataKey="price" name="Avg Baseline" stroke="#154212" strokeWidth={2.5} dot={{fill:"#154212",r:3}} connectNulls={false}/>
                     <Line type="monotone" dataKey="askingPrice" name="Avg Vendor Quote" stroke="#c8a97a" strokeWidth={2.5} dot={{fill:"#c8a97a",r:3}} connectNulls={false}/>
                   </LineChart>

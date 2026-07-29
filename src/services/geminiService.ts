@@ -280,32 +280,31 @@ export async function processBulletin(bulletinId: number, fileUrl: string) {
       });
     }
 
-    // 5. Database Save & Notification
-    if (recordsToCreate.length > 0) {
-      // Create price records staging (isVerified: false) so Admin can review in Validation tab
-      await prisma.retailPrice.createMany({ data: recordsToCreate });
-    }
+    // 5. Database Save & Notification (Wrapped in a Transaction)
+    await prisma.$transaction(async (tx) => {
+      if (recordsToCreate.length > 0) {
+        // Create price records staging (isVerified: false) so Admin can review in Validation tab
+        await tx.retailPrice.createMany({ data: recordsToCreate });
+      }
 
-    if (isOutlierDetected) {
-      await prisma.bulletinRecord.update({
+      await tx.bulletinRecord.update({
         where: { id: bulletinId },
         data: { processedStatus: 'PROCESSED' }
       });
-      // Create an alert for admin dashboard
-      await prisma.adminAlert.create({
-        data: {
-          message: outlierReason,
-          isRead: false
-        }
-      });
-      console.log(`[GeminiService] Bulletin ${bulletinId} processed with warnings. Alert created.`);
-    } else {
-      await prisma.bulletinRecord.update({
-        where: { id: bulletinId },
-        data: { processedStatus: 'PROCESSED' }
-      });
-      console.log(`[GeminiService] Bulletin ${bulletinId} processed successfully with ${recordsToCreate.length} prices.`);
-    }
+
+      if (isOutlierDetected) {
+        // Create an alert for admin dashboard
+        await tx.adminAlert.create({
+          data: {
+            message: outlierReason,
+            isRead: false
+          }
+        });
+        console.log(`[GeminiService] Bulletin ${bulletinId} processed with warnings. Alert created.`);
+      } else {
+        console.log(`[GeminiService] Bulletin ${bulletinId} processed successfully with ${recordsToCreate.length} prices.`);
+      }
+    });
 
   } catch (error: any) {
     console.error(`[GeminiService] Error processing bulletin ${bulletinId}:`, error);

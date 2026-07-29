@@ -87,7 +87,7 @@ model BulletinRecord {
   uploadDate      DateTime       @default(now())
   processedStatus BulletinStatus @default(PENDING)
   sourceOffice    String?
-  bulletinDate    String?
+  bulletinDate    DateTime?
   docType         String?
   commodities     String[]
 

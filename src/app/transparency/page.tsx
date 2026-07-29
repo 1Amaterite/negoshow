@@ -56,14 +56,21 @@ export default function TransparencyPage() {
 
     const CustomTooltip = ({ active, payload, label }: any) => {
       if (!active || !payload?.length) return null;
-      const isMock = payload[0].payload.isMock;
+      const data = payload[0].payload;
+      const isMock = data.isMock;
       return (
         <div className="bg-background border border-border rounded-xl px-3 py-2 shadow-lg text-xs">
           <p className="font-bold text-foreground mb-1 flex items-center gap-2">
             {label}
             {isMock && <span className="bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-[4px] text-[10px] font-bold">Mock Data</span>}
+            {data.isCarriedOver && <span className="bg-amber-100 text-amber-700 text-[9px] uppercase px-1 rounded font-bold tracking-wider">Stale</span>}
           </p>
           <p className="text-primary font-semibold">{t.dashboard?.actualPrice || "Baseline Price"}: ₱{payload[0].value}</p>
+          {data.isCarriedOver && data.carriedFrom && (
+            <p className="text-[10px] text-muted-foreground mt-1 max-w-[140px] leading-tight">
+              *Carried over from {data.carriedFrom}
+            </p>
+          )}
         </div>
       );
     };

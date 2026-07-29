@@ -1,18 +1,27 @@
-import { z } from "zod";
+const requiredEnvVars = [
+  { name: "DATABASE_URL", isUrl: true },
+  { name: "NEXT_PUBLIC_SUPABASE_URL", isUrl: true },
+  { name: "NEXT_PUBLIC_SUPABASE_ANON_KEY", isUrl: false },
+];
 
-const envSchema = z.object({
-  DATABASE_URL: z.string().url("DATABASE_URL must be a valid URL"),
-  NEXT_PUBLIC_SUPABASE_URL: z.string().url("NEXT_PUBLIC_SUPABASE_URL must be a valid URL"),
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1, "NEXT_PUBLIC_SUPABASE_ANON_KEY is missing"),
-  NEXT_PUBLIC_USE_MOCK_DATA: z.enum(["true", "false"]).optional().default("false"),
-});
-
-const _env = envSchema.safeParse(process.env);
-
-if (!_env.success) {
-  console.error("Invalid environment variables:");
-  console.error(_env.error.format());
-  throw new Error("Invalid environment variables");
+for (const envVar of requiredEnvVars) {
+  const value = process.env[envVar.name];
+  if (!value || value.trim() === "") {
+    console.error(`Invalid environment variables: ${envVar.name} is missing`);
+    throw new Error(`Invalid environment variables`);
+  }
+  
+  if (envVar.isUrl) {
+    try {
+      new URL(value);
+    } catch (e) {
+      console.error(`Invalid environment variables: ${envVar.name} must be a valid URL`);
+      throw new Error(`Invalid environment variables`);
+    }
+  }
 }
 
-export const env = _env.data;
+// Ensure USE_MOCK_DATA has a default if not set
+if (!process.env.NEXT_PUBLIC_USE_MOCK_DATA) {
+  process.env.NEXT_PUBLIC_USE_MOCK_DATA = "false";
+}

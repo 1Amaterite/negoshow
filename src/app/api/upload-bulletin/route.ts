@@ -22,7 +22,8 @@ export async function POST(request: Request) {
     }
 
     const sourceOffice = formData.get('sourceOffice') as string || null;
-    const bulletinDate = formData.get('bulletinDate') as string || null;
+    const bulletinDateStr = formData.get('bulletinDate') as string || null;
+    const bulletinDate = bulletinDateStr ? new Date(bulletinDateStr) : null;
     const docType = formData.get('docType') as string || null;
     const commoditiesStr = formData.get('commodities') as string;
     

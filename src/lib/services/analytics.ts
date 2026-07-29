@@ -1,9 +1,8 @@
-import { PrismaClient } from '@prisma/client';
+import prisma from '@/services/dbService';
 
-// Use a global prisma instance to avoid exhausting connections in development
-const globalForPrisma = global as unknown as { prisma: PrismaClient };
-const prisma = globalForPrisma.prisma || new PrismaClient();
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
+const globalForTrend = global as unknown as { trendCache: Map<string, { timestamp: number, data: any }> };
+const trendCache = globalForTrend.trendCache || new Map<string, { timestamp: number, data: any }>();
+if (process.env.NODE_ENV !== 'production') globalForTrend.trendCache = trendCache;
 
 export async function getCommodities() {
   const commodities = await prisma.commodity.findMany({
@@ -98,6 +97,12 @@ export async function getTrendData(commodityIdStr: string | null, daysStr: strin
     throw new Error("Missing commodityId");
   }
 
+  const cacheKey = `${commodityIdStr}-${daysStr}`;
+  const cached = trendCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < 1000 * 60 * 60) {
+    return cached.data;
+  }
+
   const days = parseInt(daysStr, 10);
   const commodityId = parseInt(commodityIdStr, 10);
   
@@ -118,7 +123,19 @@ export async function getTrendData(commodityIdStr: string | null, daysStr: strin
   }
 
   const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - days);
+  cutoffDate.setHours(0, 0, 0, 0);
+
+  const priorPrice = await prisma.retailPrice.findFirst({
+    where: {
+      commodityId: cid,
+      isVerified: true,
+      observedDate: { lt: cutoffDate }
+    },
+    orderBy: { observedDate: 'desc' }
+  });
+
+  let currentKnownPrice = priorPrice?.price || 0;
+  let lastPriceDate = priorPrice?.observedDate || null;
 
   const prices = await prisma.retailPrice.findMany({
     where: {
@@ -131,21 +148,61 @@ export async function getTrendData(commodityIdStr: string | null, daysStr: strin
     orderBy: { observedDate: 'asc' }
   });
 
-  let data = prices.map(p => ({
-    timestamp: p.observedDate.getTime(),
-    araw: p.observedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-    aktwal: Math.round(p.price),
-    hula: null as number | null,
-    hulaMin: null as number | null,
-    hulaMax: null as number | null,
-    insight: null as string | null,
-    isPeak: false,
-    isMock: p.sourceBulletinId === null
-  }));
+  const pricesByDate: Record<string, any> = {};
+  for (const p of prices) {
+    const dStr = p.observedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    pricesByDate[dStr] = p;
+  }
+
+  let data = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let iterDate = new Date(cutoffDate);
+  while (iterDate <= today) {
+    const dStr = iterDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const p = pricesByDate[dStr];
+
+    let aktwal: number;
+    let isMock = false;
+    let isCarriedOver = false;
+    let carriedFrom = null;
+
+    if (p) {
+      aktwal = Math.round(p.price);
+      currentKnownPrice = aktwal;
+      lastPriceDate = p.observedDate;
+      isMock = p.sourceBulletinId === null;
+    } else {
+      aktwal = Math.round(currentKnownPrice);
+      isCarriedOver = true;
+      if (lastPriceDate) {
+        carriedFrom = lastPriceDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+    }
+
+    if (currentKnownPrice > 0) {
+      data.push({
+        timestamp: iterDate.getTime(),
+        araw: dStr,
+        aktwal,
+        hula: null as number | null,
+        hulaMin: null as number | null,
+        hulaMax: null as number | null,
+        insight: null as string | null,
+        isPeak: false,
+        isMock,
+        isCarriedOver,
+        carriedFrom
+      });
+    }
+
+    iterDate.setDate(iterDate.getDate() + 1);
+  }
 
   if (data.length > 0) {
     const lastPrice = data[data.length - 1].aktwal;
-    const lastDate = prices[prices.length - 1].observedDate;
+    const lastDate = new Date(data[data.length - 1].timestamp);
     // Connect actual to hula
     data[data.length - 1].hula = lastPrice;
     data[data.length - 1].hulaMin = lastPrice;
@@ -236,6 +293,7 @@ Task: Provide a SINGLE, punchy sentence (max 20 words) explaining this trend ins
     }
   }
 
+  trendCache.set(cacheKey, { timestamp: Date.now(), data });
   return data;
 }
 
@@ -292,8 +350,9 @@ export async function getDescriptivePrices(commodityIdStr: string | null, daysSt
   });
 
   let lastKnownBaseline = priorPriceRecord?.price || null;
+  let lastPriceDate = priorPriceRecord?.observedDate || null;
 
-  if (prices.length === 0 && vendorChecks.length === 0) {
+  if (prices.length === 0 && vendorChecks.length === 0 && lastKnownBaseline === null) {
     return { chartData: [], kpi: { median: 0, highest: 0, lowest: 0 } };
   }
 
@@ -323,9 +382,18 @@ export async function getDescriptivePrices(commodityIdStr: string | null, daysSt
   const chartData = allDays.map(date => {
     const vals = dailyData[date] || { baseline: [], asking: [] };
     
+    let isCarriedOver = false;
+    let carriedFrom = null;
+
     const avgBaseline = vals.baseline.length > 0 ? vals.baseline.reduce((a, b) => a + b, 0) / vals.baseline.length : null;
     if (avgBaseline !== null) {
       lastKnownBaseline = avgBaseline;
+      lastPriceDate = new Date(date);
+    } else if (lastKnownBaseline !== null) {
+      isCarriedOver = true;
+      if (lastPriceDate) {
+         carriedFrom = lastPriceDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
     }
     
     const avgAsking = vals.asking.length > 0 ? vals.asking.reduce((a, b) => a + b, 0) / vals.asking.length : null;
@@ -333,7 +401,9 @@ export async function getDescriptivePrices(commodityIdStr: string | null, daysSt
     return { 
       date, 
       price: lastKnownBaseline !== null ? Math.round(lastKnownBaseline) : null,
-      askingPrice: avgAsking !== null ? Math.round(avgAsking) : null
+      askingPrice: avgAsking !== null ? Math.round(avgAsking) : null,
+      isCarriedOver,
+      carriedFrom
     };
   });
 

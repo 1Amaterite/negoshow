@@ -27,9 +27,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "2.15.2",
-    "tailwindcss": "4.1.12",
-    "tw-animate-css": "1.3.8",
-    "zod": "^4.4.3"
+    "tailwindcss": "4.1.12"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
