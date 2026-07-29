@@ -84,9 +84,60 @@ export default function ProcurementPage() {
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground text-sm">Loading procurement data...</div>;
 
-  const totalSavings = dynamicCommodities.reduce((sum: number,c: any)=>sum + Math.max(0,c.baseline-c.sources[0].price)*10,0);
-  const buyNow = dynamicCommodities.filter((c: any)=>c.trend!=="up").length;
-  const markets = new Set(dynamicCommodities.flatMap((c: any)=>c.sources.map((s: any)=>s.name))).size;
+  // 1. Biggest Saving (Max Savings per kg)
+  let maxSaving = 0;
+  let maxSavingCommodity: any = null;
+  
+  // 2. Top Buy Today (Best downward trend)
+  let minChange = Infinity;
+  let topBuyCommodity: any = null;
+  
+  // 3. Best Market (Cheapest for most items)
+  const marketCounts: Record<string, number> = {};
+  
+  // 4. Highest Risk (Most volatile / highest price increase)
+  let maxRiskChange = -Infinity;
+  let highestRiskCommodity: any = null;
+
+  dynamicCommodities.forEach((c: any) => {
+    // KPI 1 Logic
+    const diff = c.baseline - c.sources[0].price;
+    if (diff > maxSaving) {
+      maxSaving = diff;
+      maxSavingCommodity = c;
+    }
+
+    // KPI 2 Logic
+    if (c.trend !== "up" && c.change < minChange) {
+      minChange = c.change;
+      topBuyCommodity = c;
+    }
+
+    // KPI 3 Logic
+    const marketName = c.sources[0].name;
+    marketCounts[marketName] = (marketCounts[marketName] || 0) + 1;
+
+    // KPI 4 Logic
+    if (c.volatility === "High" && highestRiskCommodity?.volatility !== "High") {
+      highestRiskCommodity = c;
+    } else if (c.change > maxRiskChange && highestRiskCommodity?.volatility !== "High") {
+      maxRiskChange = c.change;
+      highestRiskCommodity = c;
+    }
+  });
+
+  // Fallbacks
+  if (!topBuyCommodity && dynamicCommodities.length > 0) topBuyCommodity = dynamicCommodities[0];
+  if (!highestRiskCommodity && dynamicCommodities.length > 0) highestRiskCommodity = dynamicCommodities[0];
+
+  let bestMarket = "";
+  let bestMarketCount = 0;
+  Object.entries(marketCounts).forEach(([name, count]) => {
+    if (count > bestMarketCount) {
+      bestMarketCount = count as number;
+      bestMarket = name;
+    }
+  });
 
   const onOpenAdvisor = (c: any) => {
     router.push(`/advisor?id=${c.id}`);
@@ -136,10 +187,26 @@ export default function ProcurementPage() {
         <div key={tab} className="tab-transition">
         {tab==="overview" && <>
           <div className="procurement-kpis">
-            <div title={(t.procurement.kpis as any).savingsTip}><span>{t.procurement.kpis.savings}</span><strong className={totalSavings > 0 ? "text-green-600" : ""}>₱{totalSavings.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong><small>{t.procurement.kpis.savingsDesc}</small></div>
-            <div title={(t.procurement.kpis as any).buyNowTip}><span>{t.procurement.kpis.buyNow}</span><strong className={buyNow > 0 ? "text-green-600" : ""}>{buyNow}</strong><small>{t.procurement.kpis.buyNowDesc}</small></div>
-            <div title={(t.procurement.kpis as any).marketsTip}><span>{t.procurement.kpis.markets}</span><strong>{markets}</strong><small>{t.procurement.kpis.marketsDesc}</small></div>
-            <div title={(t.procurement.kpis as any).volatileTip}><span>{t.procurement.kpis.volatile}</span><strong className={dynamicCommodities.filter((c: any)=>c.volatility==="High").length > 0 ? "text-red-600" : "text-green-600"}>{dynamicCommodities.filter((c: any)=>c.volatility==="High").length}</strong><small className={dynamicCommodities.filter((c: any)=>c.volatility==="High").length > 0 ? "text-red-500 font-semibold" : "text-green-500 font-semibold"}>{t.procurement.kpis.volatileDesc}</small></div>
+            <div title={(t.procurement.kpis as any).savingsTip}>
+              <span>{t.procurement.kpis.savings}</span>
+              <strong className={maxSaving > 0 ? "text-green-600" : ""}>₱{maxSaving.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
+              <small>{maxSavingCommodity ? t.procurement.kpis.savingsDesc.replace('{{item}}', (t.commodities as any)[maxSavingCommodity.name] || maxSavingCommodity.name) : t.procurement.kpis.savingsDesc}</small>
+            </div>
+            <div title={(t.procurement.kpis as any).buyNowTip}>
+              <span>{t.procurement.kpis.buyNow}</span>
+              <strong className={topBuyCommodity?.trend === "down" ? "text-green-600" : ""}>{topBuyCommodity ? ((t.commodities as any)[topBuyCommodity.name] || topBuyCommodity.name) : "None"}</strong>
+              <small>{t.procurement.kpis.buyNowDesc}</small>
+            </div>
+            <div title={(t.procurement.kpis as any).marketsTip}>
+              <span>{t.procurement.kpis.markets}</span>
+              <strong className="text-foreground truncate block max-w-full">{bestMarket || "None"}</strong>
+              <small>{t.procurement.kpis.marketsDesc.replace('{{count}}', bestMarketCount.toString())}</small>
+            </div>
+            <div title={(t.procurement.kpis as any).volatileTip}>
+              <span>{t.procurement.kpis.volatile}</span>
+              <strong className={highestRiskCommodity?.volatility === "High" ? "text-red-600" : "text-amber-600"}>{highestRiskCommodity ? ((t.commodities as any)[highestRiskCommodity.name] || highestRiskCommodity.name) : "None"}</strong>
+              <small className={highestRiskCommodity?.volatility === "High" ? "text-red-500 font-semibold" : "text-amber-500 font-semibold"}>{t.procurement.kpis.volatileDesc}</small>
+            </div>
           </div>
 
           <div className="procurement-grid">
