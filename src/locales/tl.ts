@@ -146,9 +146,9 @@ export const tl: TranslationKeys = {
     todayPlan: {
       title: "Plano sa Pagbili Ngayong Araw",
       subtitle: "Mga pangunahing hakbang batay sa galaw ng presyo at paghahambing ng mga supplier.",
-      lowestPrice: "Pinakamababang presyo",
-      bestSource: "Pinakamainam na pinagmulan",
-      wait: "Makipagtawaran / Maghintay",
+      lowestPrice: "Pinakamura",
+      bestSource: "Pinakamurang Bilihan",
+      wait: "Tumawad / Maghintay",
       buy: "Bilhin na"
     },
     vendorTips: {
