@@ -13,7 +13,7 @@ export const en = {
     marketCondition: "Market Condition Today",
     volatileToday: "Volatile today",
     mostStable: "Most stable",
-    lastDayIncrease: "+6% in the last day",
+    lastDayIncrease: "in the last day",
     barelyMoved: "Barely moved",
     lastBaselineUpdate: "Last baseline update",
     quickAccess: "Quick Access",

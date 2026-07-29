@@ -28,8 +28,8 @@ export default function Home() {
     staleTime: 300000
   });
 
-  const volatileCommodity = dynamicCommodities.length > 0 ? dynamicCommodities.find((c: any) => c.volatility === "High") || dynamicCommodities[0] : null;
-  const stableCommodity = dynamicCommodities.length > 0 ? dynamicCommodities.find((c: any) => c.volatility === "Low") || dynamicCommodities[dynamicCommodities.length - 1] : null;
+  const volatileCommodity = dynamicCommodities.length > 0 ? [...dynamicCommodities].sort((a: any, b: any) => Math.abs(b.change) - Math.abs(a.change))[0] : null;
+  const stableCommodity = dynamicCommodities.length > 0 ? [...dynamicCommodities].sort((a: any, b: any) => Math.abs(a.change) - Math.abs(b.change))[0] : null;
 
   return (
     <div>
@@ -55,7 +55,9 @@ export default function Home() {
             ) : (
               <>
                 <div className="flex items-center gap-2"><CommodityImage commodity={volatileCommodity} size="sm"/><p className="text-lg font-bold text-foreground">{lang === 'tl' ? (t.commodities as any)[volatileCommodity.name] || volatileCommodity.name : volatileCommodity.name}</p></div>
-                <p className="text-xs text-red-600 font-semibold mt-0.5">{t.home.lastDayIncrease}</p>
+                <p className="text-xs text-red-600 font-semibold mt-0.5">
+                  {volatileCommodity.change > 0 ? '+' : ''}{volatileCommodity.change}% {t.home.lastDayIncrease}
+                </p>
               </>
             )}
           </div>
@@ -66,7 +68,11 @@ export default function Home() {
             ) : (
               <>
                 <div className="flex items-center gap-2"><CommodityImage commodity={stableCommodity} size="sm"/><p className="text-lg font-bold text-foreground">{lang === 'tl' ? (t.commodities as any)[stableCommodity.name] || stableCommodity.name : stableCommodity.name}</p></div>
-                <p className="text-xs text-green-700 font-semibold mt-0.5">{t.home.barelyMoved}</p>
+                <p className="text-xs text-green-700 font-semibold mt-0.5">
+                  {stableCommodity.change === 0 
+                    ? t.home.barelyMoved 
+                    : `${stableCommodity.change > 0 ? '+' : ''}${stableCommodity.change}% ${t.home.lastDayIncrease}`}
+                </p>
               </>
             )}
           </div>

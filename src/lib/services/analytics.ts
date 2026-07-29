@@ -60,7 +60,15 @@ export async function getCommodities() {
       
       for (const [mName, prices] of Object.entries(marketPrices)) {
         const avg = prices.reduce((a, b) => a + b, 0) / prices.length;
-        sources.push({ name: mName, price: avg, distance: "2.4 km" });
+        
+        // Generate a pseudo-random but consistent distance based on market name
+        let hash = 0;
+        for (let i = 0; i < mName.length; i++) {
+          hash = mName.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const dist = (1.0 + (Math.abs(hash) % 80) / 10).toFixed(1);
+
+        sources.push({ name: mName, price: avg, distance: `${dist} km` });
       }
       // Sort by lowest price first
       sources.sort((a, b) => a.price - b.price);
@@ -232,7 +240,7 @@ export async function getTrendData(commodityIdStr: string | null, daysStr: strin
       // fallback to 1.0 if API fails
     }
     
-    const baseDailyTrend = 1.002; // natural 0.2% increase per day
+    const baseDailyTrend = 1.0; // removed artificial inflation
     const expected7DayPrice = Math.round(lastPrice * Math.pow(baseDailyTrend, 7) * weatherMultiplier);
 
     if (process.env.GEMINI_API_KEY) {
