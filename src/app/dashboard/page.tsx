@@ -7,6 +7,8 @@ import {
   getLastUpdate 
 } from "@/lib/services/analytics";
 
+export const dynamic = 'force-dynamic';
+
 export default async function DashboardPage() {
   // Fetch sequentially to prevent Prisma connection pool exhaustion (connection_limit=1)
   const commodities = await getCommodities();

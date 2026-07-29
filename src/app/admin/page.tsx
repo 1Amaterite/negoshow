@@ -605,11 +605,11 @@ export default function AdminPage() {
                         <p className={`text-lg font-extrabold shrink-0 ${r.isFlagged?"text-amber-700":"text-foreground"}`}>₱{Number(r.checkedPrice).toFixed(2)}</p>
                       </div>
                       <div className="flex gap-2">
-                        <button onClick={()=>updateRec(r.id,"approved")}
+                        <button type="button" onClick={()=>updateRec(r.id,"approved")}
                           className="flex-1 flex items-center justify-center gap-1 bg-primary text-white text-xs font-bold py-2.5 rounded-lg active:scale-[0.97] transition-all">
                           <Check size={13}/>{t.admin.validate.approve}
                         </button>
-                        <button onClick={()=>updateRec(r.id,"rejected")}
+                        <button type="button" onClick={()=>updateRec(r.id,"rejected")}
                           className="flex-1 flex items-center justify-center gap-1 bg-card border border-red-200 text-red-600 text-xs font-bold py-2.5 rounded-lg active:scale-[0.97] transition-all">
                           <X size={13}/>{t.admin.validate.reject}
                         </button>

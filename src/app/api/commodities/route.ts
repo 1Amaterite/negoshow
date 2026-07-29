@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getCommodities } from '@/lib/services/analytics';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const data = await getCommodities();

@@ -56,6 +56,7 @@ export default function DashboardClient({
     },
     enabled: !!predCId,
     initialData: predCId === initialFirstId ? initialPredData : undefined,
+    refetchInterval: 5000,
   });
 
   const { data: descPrices, isLoading: isDescPricesLoading } = useQuery({
@@ -67,6 +68,7 @@ export default function DashboardClient({
     },
     enabled: !!descCId,
     initialData: descCId === initialFirstId ? initialDescPrices : undefined,
+    refetchInterval: 5000,
   });
 
   const { data: descActivity, isLoading: isDescActivityLoading } = useQuery({
@@ -76,6 +78,7 @@ export default function DashboardClient({
       return await res.json();
     },
     initialData: initialDescActivity,
+    refetchInterval: 5000,
   });
 
   const { data: lastUpdateData } = useQuery({
@@ -85,6 +88,7 @@ export default function DashboardClient({
       return await res.json();
     },
     initialData: initialLastUpdate,
+    refetchInterval: 5000,
   });
 
   const VARIANCE_DATA = dynamicCommodities.map((c: any) => ({

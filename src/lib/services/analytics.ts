@@ -107,7 +107,7 @@ export async function getTrendData(commodityIdStr: string | null, daysStr: strin
 
   const cacheKey = `${commodityIdStr}-${daysStr}`;
   const cached = trendCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < 1000 * 60 * 60) {
+  if (cached && Date.now() - cached.timestamp < 1000 * 3) {
     return cached.data;
   }
 
@@ -368,13 +368,13 @@ export async function getDescriptivePrices(commodityIdStr: string | null, daysSt
   const dailyData: Record<string, { baseline: number[], asking: number[] }> = {};
   
   for (const p of prices) {
-    const dStr = p.observedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const dStr = p.observedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'Asia/Manila' });
     if (!dailyData[dStr]) dailyData[dStr] = { baseline: [], asking: [] };
     dailyData[dStr].baseline.push(p.price);
   }
 
   for (const v of vendorChecks) {
-    const dStr = v.checkedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const dStr = v.checkedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'Asia/Manila' });
     if (!dailyData[dStr]) dailyData[dStr] = { baseline: [], asking: [] };
     dailyData[dStr].asking.push(v.checkedPrice);
   }
@@ -384,7 +384,7 @@ export async function getDescriptivePrices(commodityIdStr: string | null, daysSt
   for (let i = 0; i < days; i++) {
     const d = new Date(cutoffDate);
     d.setDate(d.getDate() + i + 1);
-    allDays.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+    allDays.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'Asia/Manila' }));
   }
 
   const chartData = allDays.map(date => {
@@ -481,12 +481,12 @@ export async function getDescriptiveActivity(daysStr: string | null = '7') {
   const overBaselineCounts: Record<string, number> = {};
   
   let checksToday = 0;
-  const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'Asia/Manila' });
 
   for (const check of checks) {
     const mName = check.market?.name || 'Unknown Market';
     const cName = check.commodity?.name || 'Unknown Commodity';
-    const dStr = check.checkedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const dStr = check.checkedAt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'Asia/Manila' });
     
     marketCounts[mName] = (marketCounts[mName] || 0) + 1;
     commodityCounts[cName] = (commodityCounts[cName] || 0) + 1;
