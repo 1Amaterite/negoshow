@@ -562,8 +562,8 @@ export default function AdminPage() {
           <div className="grid grid-cols-3 gap-2">
             {[
               { label:t.admin.validate.pending,  count:pending.length,                              color:"bg-amber-100 text-amber-700" },
-              { label:t.admin.validate.approved, count:done.filter(r=>r.status==="approved").length, color:"bg-green-100 text-green-700" },
-              { label:t.admin.validate.rejected, count:done.filter(r=>r.status==="rejected").length, color:"bg-red-100 text-red-700"   },
+              { label:t.admin.validate.approved, count:done.filter(r=>r.validationStatus==="approved").length, color:"bg-green-100 text-green-700" },
+              { label:t.admin.validate.rejected, count:done.filter(r=>r.validationStatus==="rejected").length, color:"bg-red-100 text-red-700"   },
             ].map(({label,count,color})=>(
               <div key={label} className={`rounded-xl px-3 py-3 text-center border ${color}`}>
                 <p className="text-2xl font-extrabold">{count}</p>
